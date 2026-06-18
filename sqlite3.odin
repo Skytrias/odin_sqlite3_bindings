@@ -143,9 +143,9 @@ foreign lib {
 	total_changes64 :: proc(db: ^sqlite3) -> int64 ---
 	interrupt       :: proc(db: ^sqlite3) ---
 	is_interrupted  :: proc(db: ^sqlite3) -> b32 ---
-	complete        :: proc(sql: cstring) -> c.int ---
-	complete16      :: proc(sql: cstring16) -> c.int ---
-	busy_handler    :: proc(db: ^sqlite3, cb: proc "c" (rawptr, c.int) -> c.int, pUserData: rawptr) -> Result ---
+	complete        :: proc(sql: cstring) -> b32 ---
+	complete16      :: proc(sql: cstring16) -> b32 ---
+	busy_handler    :: proc(db: ^sqlite3, cb: proc "c" (rawptr, c.int) -> Result, pUserData: rawptr) -> Result ---
 	busy_timeout    :: proc(db: ^sqlite3, ms: c.int) -> Result ---
 	setlk_timeout   :: proc(db: ^sqlite3, ms: c.int, flags: SETLK_Flags) -> Result ---
 
@@ -190,11 +190,11 @@ foreign lib {
    trace_v2 :: proc(
 		db: ^sqlite3,
 		uMask: Trace_Codes,
-		xCallback: proc "c" (Trace_Code, rawptr, rawptr, rawptr) -> c.int,
+		xCallback: proc "c" (Trace_Code, rawptr, rawptr, rawptr) -> b32,
 		pCtx: rawptr,
-	) -> c.int ---
+	) -> Result ---
 
-	progress_handler :: proc(db: ^sqlite3, n: c.int, cb: proc "c" (pUserData: rawptr) -> c.int, pUserData: rawptr) ---
+	progress_handler :: proc(db: ^sqlite3, n: c.int, cb: proc "c" (pUserData: rawptr) -> b32, pUserData: rawptr) ---
 
 	open :: proc(
 		filename: cstring, /* Database filename (UTF-8) */
@@ -342,7 +342,7 @@ foreign lib {
 	expanded_sql :: proc(pStmt: ^stmt) -> cstring ---
 
 	stmt_readonly  :: proc(pStmt: ^stmt) -> b32 ---
-	stmt_isexplain :: proc(pStmt: ^stmt) -> c.int ---
+	stmt_isexplain :: proc(pStmt: ^stmt) -> b32 ---
 	stmt_explain   :: proc(pStmt: ^stmt, eMode: c.int) -> Result ---
 	stmt_busy      :: proc(pStmt: ^stmt) -> b32 ---
 
@@ -522,9 +522,9 @@ foreign lib {
 	result_text64     :: proc(pCtx: ^sqlite3_context, data: rawptr,    n: uint64, d: proc "c" (rawptr) = SQLITE_STATIC, encoding: Text_Encoding_U8) ---
 	
 	result_zeroblob     :: proc(pCtx: ^sqlite3_context, n: c.int) ---
-	result_zeroblob64   :: proc(pCtx: ^sqlite3_context, n: uint64) -> c.int ---
+	result_zeroblob64   :: proc(pCtx: ^sqlite3_context, n: uint64) -> Result ---
 
-	result_subtype      :: proc(pCtx: ^sqlite3_context, eSubtype: c.uint /*TODO*/) ---
+	result_subtype      :: proc(pCtx: ^sqlite3_context, eSubtype: c.uint) ---
 
 	create_collation :: proc(
 		db: ^sqlite3,
@@ -549,7 +549,6 @@ foreign lib {
 		xCompare: proc "c" (rawptr, c.int, rawptr, c.int, cstring) -> c.int,
 	) -> Result ---
 
-	/*TODO*/
 	collation_needed :: proc(
 		db: ^sqlite3,
 		pCollNeededArg: rawptr,
@@ -589,7 +588,7 @@ foreign lib {
 		cb: proc "c" (rawptr, cstring, c.uint, c.uint, c.uint) -> c.uint,
 		p: rawptr,
 		d: proc "c" (rawptr) = SQLITE_STATIC,
-	) -> c.int ---
+	) -> Result ---
 
 	update_hook :: proc(
 		db: ^sqlite3,
@@ -642,7 +641,7 @@ foreign lib {
 		p:           ^module,  /* Methods for the module */
 		pClientData: rawptr,   /* Client data for xCreate/xConnect */
 		xDestroy:    proc "c" (rawptr), /* Module destructor function */
-	) -> c.int ---
+	) -> Result ---
 
 	drop_modules :: proc(
 		db:     ^sqlite3,          /* Remove modules from this connection */
@@ -755,27 +754,27 @@ foreign lib {
 
 	vtab_config      :: proc(db: ^sqlite3, op: VTab_Config, #c_vararg args: ..any) -> Result ---
 	vtab_on_conflict :: proc(db: ^sqlite3) -> Conflict_Resolution ---
-	vtab_nochange    :: proc(ppCtx: ^sqlite3_context) -> c.int ---
+	vtab_nochange    :: proc(ppCtx: ^sqlite3_context) -> b32 ---
 	vtab_collation   :: proc(pIdxInfo: ^index_info, iCons: c.int) -> cstring ---
-	vtab_distinct    :: proc(pIdxInfo: ^index_info) -> c.int ---
-	vtab_in          :: proc(pIdxInfo: ^index_info, iCons: c.int, bHandle: b32) -> c.int ---
+	vtab_distinct    :: proc(pIdxInfo: ^index_info) -> b32 ---
+	vtab_in          :: proc(pIdxInfo: ^index_info, iCons: c.int, bHandle: b32) -> b32 ---
 	vtab_in_first    :: proc(pVal: ^value, ppOut: ^^value) -> Result ---
 	vtab_in_next     :: proc(pVal: ^value, ppOut: ^^value) -> Result ---
 	vtab_rhs_value   :: proc(pIdxInfo: ^index_info, n: c.int, ppVal: ^^value) -> Result ---
 
 	stmt_scanstatus :: proc(
-		pStmt:         ^stmt,             /* Prepared statement for which info desired */
-		idx:           c.int,             /* Index of loop to report on */
-		iScanStatusOp: STMT_Scan_Stat_Op, /* Information desired.  SQLITE_SCANSTAT_* */
-		pOut:          rawptr,            /* Result written here */
-	) -> c.int ---
+		pStmt:         ^stmt,        /* Prepared statement for which info desired */
+		idx:           c.int,        /* Index of loop to report on */
+		iScanStatusOp: Scan_Stat_Op, /* Information desired.  SQLITE_SCANSTAT_* */
+		pOut:          rawptr,       /* Result written here */
+	) -> b32 ---
 	stmt_scanstatus_v2 :: proc(
-		pStmt:         ^stmt,                /* Prepared statement for which info desired */
-		idx:           c.int,                /* Index of loop to report on */
-		iScanStatusOp: STMT_Scan_Stat_Op,    /* Information desired.  SQLITE_SCANSTAT_* */
-		flags:         STMT_Scan_Stat_Flags, /* Mask of flags defined below */
-		pOut:          rawptr,               /* Result written here */
-	) -> c.int ---
+		pStmt:         ^stmt,           /* Prepared statement for which info desired */
+		idx:           c.int,           /* Index of loop to report on */
+		iScanStatusOp: Scan_Stat_Op,    /* Information desired.  SQLITE_SCANSTAT_* */
+		flags:         Scan_Stat_Flags, /* Mask of flags defined below */
+		pOut:          rawptr,          /* Result written here */
+	) -> b32 ---
 	stmt_scanstatus_reset :: proc(pStmt: ^stmt) ---
 
 	db_cacheflush :: proc(db: ^sqlite3) -> Result ---
@@ -827,11 +826,11 @@ foreign lib {
 when !OMIT_COMPILEOPTION_DIAGS {
 	@(default_calling_convention="c", link_prefix="sqlite3_")
 	foreign lib {
-		compileoption_used :: proc (zOptName: cstring) -> c.int ---
+		compileoption_used :: proc (zOptName: cstring) -> b32 ---
 		compileoption_get  :: proc (N: c.int) -> cstring ---
 	}
 } else {
-	compileoption_used :: proc "c" (zOptName: cstring) -> c.int { return 0 }
+	compileoption_used :: proc "c" (zOptName: cstring) -> b32 { return false }
 	compileoption_get  :: proc "c" (N: c.int) -> cstring { return "" }
 }
 
@@ -848,15 +847,15 @@ when !OMIT_DEPRECATED {
 	@(default_calling_convention="c", link_prefix="sqlite3_")
 	foreign lib {
 		aggregate_count   :: proc(p: ^sqlite3_context) -> c.int ---
-		expired           :: proc(pStmt: ^stmt) -> c.int ---
-		transfer_bindings :: proc(pFromStmt: ^stmt, pToStmt: ^stmt) -> c.int ---
-		global_recover    :: proc() -> c.int ---
+		expired           :: proc(pStmt: ^stmt) -> bool ---
+		transfer_bindings :: proc(pFromStmt: ^stmt, pToStmt: ^stmt) -> Result ---
+		global_recover    :: proc() -> Result ---
 		thread_cleanup    :: proc() ---
 		memory_alarm      :: proc(
 			xCallback: proc "c" (rawptr, int64, c.int), 
 			pArg: rawptr, 
 			iThreshold: int64,
-		) -> c.int ---
+		) -> Result ---
 	}   
 }
 
@@ -878,7 +877,7 @@ when ENABLE_CEROD {
 when !OMIT_SHARED_CACHE {
 	@(default_calling_convention="c", link_prefix="sqlite3_")
 	foreign lib {
-		enable_shared_cache :: proc(enable: b32) -> c.int ---
+		enable_shared_cache :: proc(enable: b32) -> Result ---
 	}
 }
 
@@ -908,10 +907,10 @@ when ENABLE_PREUPDATE_HOOK {
 			),
 			pCtx: rawptr,
 		) -> rawptr ---
-		preupdate_old       :: proc(db: ^sqlite3, iIdx: c.int, ppValue: ^^value) -> c.int ---
+		preupdate_old       :: proc(db: ^sqlite3, iIdx: c.int, ppValue: ^^value) -> Result ---
 		preupdate_count     :: proc(db: ^sqlite3) -> c.int ---
 		preupdate_depth     :: proc(db: ^sqlite3) -> c.int ---
-		preupdate_new       :: proc(db: ^sqlite3, iIdx: c.int, ppValue: ^^value) -> c.int ---
+		preupdate_new       :: proc(db: ^sqlite3, iIdx: c.int, ppValue: ^^value) -> Result ---
 		preupdate_blobwrite :: proc(db: ^sqlite3) -> c.int ---
 	}
 }
@@ -1035,28 +1034,28 @@ snapshot :: struct {
 io_methods :: struct {
 	iVersion: c.int,
 	
-	xClose:                 proc "c" (file: ^file) -> c.int,
-	xRead:                  proc "c" (file: ^file, buf: rawptr, iAmt: c.int, iOfst: int64) -> c.int,
-	xWrite:                 proc "c" (file: ^file, buf: rawptr, iAmt: c.int, iOfst: int64) -> c.int,
-	xTruncate:              proc "c" (file: ^file, size: int64) -> c.int,
-	xSync:                  proc "c" (file: ^file, flags: Sync_Flag) -> c.int,
-	xFileSize:              proc "c" (file: ^file, pSize: ^int64) -> c.int,
-	xLock:                  proc "c" (file: ^file, level: Lock_Level) -> c.int,
-	xUnlock:                proc "c" (file: ^file, level: Lock_Level) -> c.int,
-	xCheckReservedLock:     proc "c" (file: ^file, pResOut: ^c.int) -> c.int,
-	xFileControl:           proc "c" (file: ^file, op: c.int, pArg: rawptr) -> c.int,
-	xSectorSize:            proc "c" (file: ^file) -> c.int,
-	xDeviceCharacteristics: proc "c" (file: ^file) -> IOCAP_Flags,
+	xClose:                 proc "c" (fd: ^file) -> Result,
+	xRead:                  proc "c" (fd: ^file, buf: rawptr, iAmt: c.int, iOfst: int64) -> Result,
+	xWrite:                 proc "c" (fd: ^file, buf: rawptr, iAmt: c.int, iOfst: int64) -> Result,
+	xTruncate:              proc "c" (fd: ^file, size: int64) -> Result,
+	xSync:                  proc "c" (fd: ^file, flags: Sync_Flag) -> Result,
+	xFileSize:              proc "c" (fd: ^file, pSize: ^int64) -> Result,
+	xLock:                  proc "c" (fd: ^file, level: Lock_Level) -> Result,
+	xUnlock:                proc "c" (fd: ^file, level: Lock_Level) -> Result,
+	xCheckReservedLock:     proc "c" (fd: ^file, pResOut: ^c.int) -> Result,
+	xFileControl:           proc "c" (fd: ^file, op: c.int, pArg: rawptr) -> Result,
+	xSectorSize:            proc "c" (fd: ^file) -> c.int,
+	xDeviceCharacteristics: proc "c" (fd: ^file) -> IOCAP_Flags,
 	/* Methods above are valid for version 1 */
 	
-	xShmMap:     proc "c" (file: ^file, iPg: c.int, pgsz: c.int, _: c.int, _: ^rawptr) -> c.int,
-	xShmLock:    proc "c" (file: ^file, offset: c.int, n: c.int, flags: c.int /*TODO*/) -> c.int,
-	xShmBarrier: proc "c" (file: ^file),
-	xShmUnmap:   proc "c" (file: ^file, deleteFlag: c.int) -> c.int,
+	xShmMap:     proc "c" (fd: ^file, iRegion: c.int, szRegion: c.int, bExtend: b32, pp: ^rawptr) -> Result,
+	xShmLock:    proc "c" (fd: ^file, offset: c.int, n: c.int, flags: SHM_Lock_Flags) -> Result,
+	xShmBarrier: proc "c" (fd: ^file),
+	xShmUnmap:   proc "c" (fd: ^file, deleteFlag: c.int) -> Result,
 	/* Methods above are valid for version 2 */
 	
-	xFetch:   proc "c" (file: ^file, iOfst: int64, iAmt: c.int, pp: ^rawptr) -> c.int,
-	xUnfetch: proc "c" (file: ^file, iOfst: int64, p: rawptr) -> c.int,
+	xFetch:   proc "c" (fd: ^file, iOfst: int64, iAmt: c.int, pp: ^rawptr) -> Result,
+	xUnfetch: proc "c" (fd: ^file, iOfst: int64, p: rawptr) -> Result,
 	/* Methods above are valid for version 3 */
 	/* Additional methods may be added in future releases */
 }
@@ -1064,35 +1063,35 @@ io_methods :: struct {
 vfs :: struct {
 	iVersion:   c.int,   /* Structure version number (currently 3) */
 	szOsFile:   c.int,   /* Size of subclassed sqlite3_file */
-	mxPathname: c.int, /* Maximum file pathname length */
-	pNext:      ^vfs,       /* Next registered VFS */
-	zName:      cstring,    /* Name of this virtual file system */
+	mxPathname: c.int,   /* Maximum file pathname length */
+	pNext:      ^vfs,    /* Next registered VFS */
+	zName:      cstring, /* Name of this virtual file system */
 	pAppData:   rawptr,  /* Pointer to application-specific data */
 	
-	Open:         proc "c" (vfs: ^vfs, zName: filename, file: ^file, flags: c.int /*TODO*/, pOutFlags: ^c.int /*TODO*/) -> c.int,
-	Delete:       proc "c" (vfs: ^vfs, zName: cstring, syncDir: c.int /*TODO*/) -> c.int,
-	Access:       proc "c" (vfs: ^vfs, zName: cstring, flags: c.int/*TODO*/, pResOut: ^c.int) -> c.int,
-	FullPathname: proc "c" (vfs: ^vfs, zName: cstring, nOut: c.int, zOut: [^]u8) -> c.int,
-	DlOpen:       proc "c" (vfs: ^vfs, zFilename: cstring) -> rawptr,
-	DlError:      proc "c" (vfs: ^vfs, nByte: c.int, zErrMsg: [^]u8),
-	DlSym:        proc "c" (proc "c" (vfs: ^vfs, _: rawptr, zSymbol: cstring)),
-	DlClose:      proc "c" (vfs: ^vfs, _: rawptr),
-	Randomness:   proc "c" (vfs: ^vfs, nByte: c.int, zOut: [^]u8) -> c.int,
-	Sleep:        proc "c" (vfs: ^vfs, microseconds: c.int) -> c.int,
-	CurrentTime:  proc "c" (vfs: ^vfs, tOut: ^double) -> c.int,
-	GetLastError: proc "c" (vfs: ^vfs, nOut: c.int, zOut: [^]u8) -> c.int,
+	xOpen:         proc "c" (vfs: ^vfs, zName: filename, file: ^file, flags: Open_Flags, pOutFlags: ^Open_Flags) -> Result,
+	xDelete:       proc "c" (vfs: ^vfs, zName: cstring, syncDir: c.int) -> Result,
+	xAccess:       proc "c" (vfs: ^vfs, zName: cstring, flags: Access_Flags, pResOut: ^b32) -> Result,
+	xFullPathname: proc "c" (vfs: ^vfs, zName: cstring, nOut: c.int, zOut: [^]u8) -> Result,
+	xDlOpen:       proc "c" (vfs: ^vfs, zFilename: cstring) -> rawptr,
+	xDlError:      proc "c" (vfs: ^vfs, nByte: c.int, zErrMsg: [^]u8),
+	xDlSym:        proc "c" (proc "c" (vfs: ^vfs, _: rawptr, zSymbol: cstring)),
+	xDlClose:      proc "c" (vfs: ^vfs, _: rawptr),
+	xRandomness:   proc "c" (vfs: ^vfs, nByte: c.int, zOut: [^]u8) -> c.int,
+	xSleep:        proc "c" (vfs: ^vfs, microseconds: c.int) -> c.int,
+	xCurrentTime:  proc "c" (vfs: ^vfs, tOut: ^double) -> c.int,
+	xGetLastError: proc "c" (vfs: ^vfs, nOut: c.int, zOut: [^]u8) -> Result,
 	/*
 	** The methods above are in version 1 of the sqlite_vfs object
 	** definition.  Those that follow are added in version 2 or later
 	*/
-	CurrentTimeInt64: proc "c" (vfs: ^vfs, _: ^int64) -> c.int,
+	xCurrentTimeInt64: proc "c" (vfs: ^vfs, _: ^int64) -> c.int,
 	/*
 	** The methods above are in versions 1 and 2 of the sqlite_vfs object.
 	** Those below are for version 3 and greater.
 	*/
-	SetSystemCall:  proc "c" (vfs: ^vfs, zName: cstring, _: syscall_ptr) -> c.int,
-	GetSystemCall:  proc "c" (vfs: ^vfs, zName: cstring) -> syscall_ptr,
-	NextSystemCall: proc "c" (vfs: ^vfs, zName: cstring) -> cstring,
+	xSetSystemCall:  proc "c" (vfs: ^vfs, zName: cstring, _: syscall_ptr) -> Result,
+	xGetSystemCall:  proc "c" (vfs: ^vfs, zName: cstring) -> syscall_ptr,
+	xNextSystemCall: proc "c" (vfs: ^vfs, zName: cstring) -> cstring,
 	/*
 	** The methods above are in versions 1 through 3 of the sqlite_vfs object.
 	** New fields may be appended in future versions.  The iVersion
@@ -1106,7 +1105,7 @@ mem_methods :: struct {
 	xRealloc:  proc "c" (rawptr, c.int) -> rawptr, /* Resize an allocation */
 	xSize:     proc "c" (rawptr) -> c.int,         /* Return the size of an allocation */
 	xRoundup:  proc "c" (c.int) -> c.int,          /* Round up request size to allocation size */
-	xInit:     proc "c" (rawptr) -> c.int,         /* Initialize the memory allocator */
+	xInit:     proc "c" (rawptr) -> Result,        /* Initialize the memory allocator */
 	xShutdown: proc "c" (rawptr),                  /* Deinitialize the memory allocator */
 	pAppData:  rawptr,                             /* Argument to xInit() and xShutdown() */
 }
@@ -1114,55 +1113,55 @@ mem_methods :: struct {
 module :: struct {
 	iVersion: c.int,
 	
-	xCreate:       proc "c" (db: ^sqlite3, pAux: rawptr, argc: c.int, argv: [^]cstring, ppVTab: ^^vtab, _: ^[^]byte) -> c.int,
-	xConnect:      proc "c" (db: ^sqlite3, pAux: rawptr, argc: c.int, argv: [^]cstring, ppVTab: ^^vtab, _: ^[^]byte) -> c.int,
-	xBestIndex:    proc "c" (pVTab: ^vtab, pII: ^index_info) -> c.int,
-	xDisconnect:   proc "c" (pVTab: ^vtab) -> c.int,
-	xDestroy:      proc "c" (pVTab: ^vtab) -> c.int,
-	xOpen:         proc "c" (pVTab: ^vtab, ppCursor: ^^vtab_cursor) -> c.int,
-	xClose:        proc "c" (^vtab_cursor) -> c.int,
+	xCreate:       proc "c" (db: ^sqlite3, pAux: rawptr, argc: c.int, argv: [^]cstring, ppVTab: ^^vtab, _: ^[^]byte) -> Result,
+	xConnect:      proc "c" (db: ^sqlite3, pAux: rawptr, argc: c.int, argv: [^]cstring, ppVTab: ^^vtab, _: ^[^]byte) -> Result,
+	xBestIndex:    proc "c" (pVTab: ^vtab, pII: ^index_info) -> Result,
+	xDisconnect:   proc "c" (pVTab: ^vtab) -> b32,
+	xDestroy:      proc "c" (pVTab: ^vtab) -> Result,
+	xOpen:         proc "c" (pVTab: ^vtab, ppCursor: ^^vtab_cursor) -> Result,
+	xClose:        proc "c" (^vtab_cursor) -> Result,
 	xFilter:       proc "c" (pVTabCur: ^vtab_cursor, idxNum: c.int, idxStr: cstring, argc: c.int, argv: [^]^value) -> c.int,
-	xNext:         proc "c" (^vtab_cursor) -> c.int,
-	xEof:          proc "c" (^vtab_cursor) -> c.int,
-	xColumn:       proc "c" (^vtab_cursor, ^sqlite3_context, c.int) -> c.int,
-	xRowid:        proc "c" (pVTabCur: ^vtab_cursor, pRowid: ^int64) -> c.int,
-	xUpdate:       proc "c" (^vtab, c.int, ^^value, ^int64) -> c.int,
-	xBegin:        proc "c" (pVTab: ^vtab) -> c.int,
-	xSync:         proc "c" (pVTab: ^vtab) -> c.int,
-	xCommit:       proc "c" (pVTab: ^vtab) -> c.int,
-	xRollback:     proc "c" (pVTab: ^vtab) -> c.int,
-	xFindFunction: proc "c" (pVtab: ^vtab, nArg: c.int, zName: cstring, pxFunc: ^(proc "c" (^sqlite3_context, c.int, ^^value)), ppArg: ^rawptr) -> c.int,
-	xRename:       proc "c" (pVtab: ^vtab, zNew: cstring) -> c.int,
+	xNext:         proc "c" (^vtab_cursor) -> Result,
+	xEof:          proc "c" (^vtab_cursor) -> Result,
+	xColumn:       proc "c" (^vtab_cursor, ^sqlite3_context, c.int) -> Result,
+	xRowid:        proc "c" (pVTabCur: ^vtab_cursor, pRowid: ^int64) -> Result,
+	xUpdate:       proc "c" (^vtab, c.int, ^^value, ^int64) -> Result,
+	xBegin:        proc "c" (pVTab: ^vtab) -> Result,
+	xSync:         proc "c" (pVTab: ^vtab) -> Result,
+	xCommit:       proc "c" (pVTab: ^vtab) -> Result,
+	xRollback:     proc "c" (pVTab: ^vtab) -> Result,
+	xFindFunction: proc "c" (pVtab: ^vtab, nArg: c.int, zName: cstring, pxFunc: ^(proc "c" (^sqlite3_context, c.int, ^^value)), ppArg: ^rawptr) -> Result,
+	xRename:       proc "c" (pVtab: ^vtab, zNew: cstring) -> Result,
 	/* The methods above are in version 1 of the sqlite_module object. Those
 	** below are for version 2 and greater. */
-	xSavepoint:    proc "c" (^vtab, c.int) -> c.int,
-	xRelease:      proc "c" (^vtab, c.int) -> c.int,
-	xRollbackTo:   proc "c" (^vtab, c.int) -> c.int,
+	xSavepoint:    proc "c" (^vtab, c.int) -> Result,
+	xRelease:      proc "c" (^vtab, c.int) -> Result,
+	xRollbackTo:   proc "c" (^vtab, c.int) -> Result,
 	/* The methods above are in versions 1 and 2 of the sqlite_module object.
 	** Those below are for version 3 and greater. */
-	xShadowName:   proc "c" (cstring) -> c.int,
+	xShadowName:   proc "c" (cstring) -> Result,
 	/* The methods above are in versions 1 through 3 of the sqlite_module object.
 	** Those below are for version 4 and greater. */
-	xIntegrity:    proc "c" (pVTab: ^vtab, zSchema: cstring, zTabName: cstring, mFlags: c.int /*TODO*/, pzErr: ^[^]u8) -> c.int,
+	xIntegrity:    proc "c" (pVTab: ^vtab, zSchema: cstring, zTabName: cstring, mFlags: c.int /*TODO*/, pzErr: ^[^]u8) -> Result,
 }
 
 mutex_methods :: struct {
-	xMutexInit:    proc "c" () -> c.int,
-	xMutexEnd:     proc "c" () -> c.int,
+	xMutexInit:    proc "c" () -> Result,
+	xMutexEnd:     proc "c" () -> Result,
 	xMutexAlloc:   proc "c" (c.int) -> ^mutex,
 	xMutexFree:    proc "c" (^mutex),
 	xMutexEnter:   proc "c" (^mutex),
-	xMutexTry:     proc "c" (^mutex) -> c.int,
+	xMutexTry:     proc "c" (^mutex) -> Result,
 	xMutexLeave:   proc "c" (^mutex),
-	xMutexHeld:    proc "c" (^mutex) -> c.int,
-	xMutexNotheld: proc "c" (^mutex) -> c.int,
+	xMutexHeld:    proc "c" (^mutex) -> b32,
+	xMutexNotheld: proc "c" (^mutex) -> b32,
 }
 
 pcache_methods2 :: struct {
 	iVersion: c.int,
 	pArg: rawptr,
 
-	xInit:      proc "c" (rawptr) -> c.int,
+	xInit:      proc "c" (rawptr) -> Result,
 	xShutdown:  proc "c" (rawptr),
 	xCreate:    proc "c" (szPage: c.int, szExtra: c.int, bPurgeable: b32) -> ^pcache,
 	xCachesize: proc "c" (pPCache: ^pcache, nCachesize: c.int),
@@ -1179,13 +1178,13 @@ pcache_methods2 :: struct {
 pcache_methods :: struct {
 	pArg: rawptr,
 
-	xInit:      proc "c" (rawptr) -> c.int,
+	xInit:      proc "c" (rawptr) -> Result,
 	xShutdown:  proc "c" (rawptr),
 	xCreate:    proc "c" (szPage: c.int, bPurgeable: b32) -> ^pcache,
 	xCachesize: proc "c" (pPCache: ^pcache, nCachesize: c.int),
 	xPagecount: proc "c" (^pcache) -> c.int,
-	xFetch:     proc "c" (pPCache: ^pcache, key: c.uint, createFlag: c.int /*TODO*/) -> rawptr,
-	xUnpin:     proc "c" (pPCache: ^pcache, pPage: rawptr, discard: c.int),
+	xFetch:     proc "c" (pPCache: ^pcache, key: c.uint, createFlag: b32) -> rawptr,
+	xUnpin:     proc "c" (pPCache: ^pcache, pPage: rawptr, discard: b32),
 	xRekey:     proc "c" (pPCache: ^pcache, pPage: rawptr, oldKey: c.uint, newKey: c.uint),
 	xTruncate:  proc "c" (pPCache: ^pcache, iLimit: c.uint),
 	xDestroy:   proc "c" (^pcache),
@@ -1226,6 +1225,8 @@ Result :: enum c.int {
 	ROW        = 100,  /* sqlite3_step() has another row ready */
 	DONE       = 101,  /* sqlite3_step() has finished executing */
 	/* end-of-error-codes */
+
+	/*  Extended Result Codes */
 
 	ERROR_MISSING_COLLSEQ   = (ERROR | (1<<8)),
 	ERROR_RETRY             = (ERROR | (2<<8)),
@@ -1323,7 +1324,7 @@ Result :: enum c.int {
 	OK_SYMLINK              = (OK | (2<<8)), /* internal only */
 }
 
-Open_Flags :: bit_set[Open_Flag; c.int] /*TODO*/
+Open_Flags :: bit_set[Open_Flag; c.int]
 Open_Flag  :: enum c.int {
 	READONLY      =  0,  /* Ok for sqlite3_open_v2() */
 	READWRITE     =  1,  /* Ok for sqlite3_open_v2() */
@@ -1436,7 +1437,7 @@ FCNTL_Opcodes :: enum c.int {
 }
 
 
-Access_Flags :: bit_set[Access_Flag; c.int] /*TODO*/
+Access_Flags :: bit_set[Access_Flag; c.int]
 Access_Flag :: enum c.int {
 	EXISTS    = 0,
 	READWRITE = 1,   /* Used by PRAGMA temp_store_directory */
@@ -1444,7 +1445,7 @@ Access_Flag :: enum c.int {
 }
 
 
-SHM_Lock_Flags :: bit_set[SHM_Lock_Flag; c.int] /*TODO*/
+SHM_Lock_Flags :: bit_set[SHM_Lock_Flag; c.int]
 SHM_Lock_Flag :: enum c.int {
 	UNLOCK    = 0,
 	LOCK      = 1,
@@ -1453,7 +1454,7 @@ SHM_Lock_Flag :: enum c.int {
 }
 
 
-SETLK_Flags :: bit_set[SETLK_Flag; c.int] /*TODO*/
+SETLK_Flags :: bit_set[SETLK_Flag; c.int]
 SETLK_Flag :: enum c.int {
 	BLOCK_ON_CONNECT = 0,
 }
@@ -1562,7 +1563,7 @@ Action_Code :: enum c.int {
 	RECURSIVE           = 33,   /* NULL            NULL            */
 }
 
-Trace_Codes :: bit_set[Trace_Code; c.uint] /*TODO*/
+Trace_Codes :: bit_set[Trace_Code; c.uint]
 Trace_Code :: enum c.uint {
 	STMT    = 0,
 	PROFILE = 1,
@@ -1586,7 +1587,7 @@ Limit_Category :: enum c.int {
 	PARSER_DEPTH        = 12,
 }
 
-Prepare_Flags :: bit_set[Prepare_Flag; c.uint] /*TODO*/
+Prepare_Flags :: bit_set[Prepare_Flag; c.uint]
 Prepare_Flag :: enum c.uint {
 	PERSISTENT = 0,
 	NORMALIZE  = 1,
@@ -1623,7 +1624,7 @@ Text_Encoding_U8 :: enum u8 {
 }
 #assert(len(Text_Encoding) == len(Text_Encoding_U8))
 
-Function_Flags :: bit_set[Function_Flag; c.int] /*TODO*/
+Function_Flags :: bit_set[Function_Flag; c.int]
 Function_Flag :: enum c.int {
 	DETERMINISTIC  = 11,
 	DIRECTONLY     = 19,
@@ -1645,7 +1646,7 @@ TXN_State :: enum c.int {
 	WRITE   = 2,
 }
 
-VT_Scan_Flags :: bit_set[VT_Scan_Flag; c.int] /*TODO*/
+VT_Scan_Flags :: bit_set[VT_Scan_Flag; c.int]
 VT_Scan_Flag :: enum c.int {
 	UNIQUE = 0, /* Scan visits at most 1 row */
 	HEX    = 1, /* Display idxNum as hex in EXPLAIN QUERY PLAN */
@@ -1800,7 +1801,7 @@ Conflict_Resolution :: enum c.int {
 	REPLACE  = 5,
 }
 
-STMT_Scan_Stat_Op :: enum c.int {
+Scan_Stat_Op :: enum c.int {
 	NLOOP    = 0,
 	NVISIT   = 1,
 	EST      = 2,
@@ -1811,17 +1812,17 @@ STMT_Scan_Stat_Op :: enum c.int {
 	NCYCLE   = 7,
 }
 
-STMT_Scan_Stat_Flags :: bit_set[STMT_Scan_Stat_Flag; c.int] /*TODO*/
-STMT_Scan_Stat_Flag :: enum c.int {
+Scan_Stat_Flags :: bit_set[Scan_Stat_Flag; c.int]
+Scan_Stat_Flag :: enum c.int {
 	COMPLEX = 0,
 }
 
-Serialize_Flags :: bit_set[Serialize_Flag; c.uint] /*TODO*/
+Serialize_Flags :: bit_set[Serialize_Flag; c.uint]
 Serialize_Flag :: enum c.uint {
 	NOCOPY = 0, /* Do no memory allocations */
 }
 
-Deserialize_Flags :: bit_set[Deserialize_Flag; c.uint] /*TODO*/
+Deserialize_Flags :: bit_set[Deserialize_Flag; c.uint]
 Deserialize_Flag :: enum c.uint {
 	FREEONCLOSE = 0, /* Call sqlite3_free() on close */
 	RESIZEABLE  = 1, /* Resize using sqlite3_realloc64() */
@@ -1921,12 +1922,12 @@ Session_OBJ_Config :: enum c.int {
 	ROWID = 2,
 }
 
-Changeset_Start_Flags :: bit_set[Changeset_Start_Flag; c.int] /*TODO*/
+Changeset_Start_Flags :: bit_set[Changeset_Start_Flag; c.int] 
 Changeset_Start_Flag :: enum c.int {
 	INVERT = 1,
 }
 
-Changeset_Apply_Flags :: bit_set[Changeset_Apply_Flag; c.int] /*TODO*/
+Changeset_Apply_Flags :: bit_set[Changeset_Apply_Flag; c.int]
 Changeset_Apply_Flag :: enum c.int {
 	NOSAVEPOINT  = 0,
 	INVERT       = 1,
@@ -2060,7 +2061,7 @@ when SQLITE_ENABLE_SESSION {
 		changeset_fk_conflicts :: proc(
 			pIter: ^changeset_iter, /* Changeset iterator */
 			pnOut: ^c.int,          /* OUT: Number of FK violations */
-		) -> c.int ---
+		) -> Result ---
 
 		changeset_finalize :: proc(pIter: ^changeset_iter) -> Result ---
 
@@ -2076,7 +2077,7 @@ when SQLITE_ENABLE_SESSION {
 			pB:    rawptr,  /* Pointer to buffer containing changeset B */
 			pnOut: ^c.int,  /* OUT: Number of bytes in output changeset */
 			ppOut: ^rawptr, /* OUT: Buffer containing output changeset */
-		) -> c.int ---
+		) -> Result ---
 
 		changegroup_new        :: proc(pp: ^^changegroup) -> Result ---
 		changegroup_schema     :: proc(p: ^changegroup, db: ^sqlite3, zDb: cstring) -> Result ---
@@ -2146,7 +2147,7 @@ when SQLITE_ENABLE_SESSION {
 		) -> Result ---
 
 		rebaser_create    :: proc(ppNew: ^^rebaser) -> Result ---
-		rebaser_configure :: proc(p: ^rebaser, nRebase: c.int, pRebase: rawptr) -> c.int ---
+		rebaser_configure :: proc(p: ^rebaser, nRebase: c.int, pRebase: rawptr) -> Result ---
 		rebaser_rebase    :: proc(p: ^rebaser, nIn: c.int, pIn: rawptr, pnOut: ^c.int, ppOut: ^rawptr) -> Result ---
 		rebaser_delete    :: proc(p: ^rebaser) ---
 
@@ -2323,29 +2324,30 @@ Fts5ExtensionApi :: struct {
 	xColumnCount:       proc "c" (p: ^Fts5Context) -> c.int,
 	xRowCount:          proc "c" (p: ^Fts5Context, pnRow: ^int64) -> c.int,
 	xColumnTotalSize:   proc "c" (p: ^Fts5Context, iCol: c.int, pnToken: ^int64) -> c.int,
-	xTokenize: proc "c" (p: ^Fts5Context,
+	xTokenize: proc "c" (
+		p: ^Fts5Context,
 		pText: cstring, nText: c.int, /* Text to tokenize */
 		pCtx: rawptr,                 /* Context passed to xToken() */
-		xToken: proc "c" (rawptr, c.int, cstring, c.int, c.int, c.int) -> c.int, /* Callback */
+		xToken: proc "c" (rawptr, c.int, cstring, c.int, c.int, c.int) -> Result, /* Callback */
 	) -> Result,
 	xPhraseCount:       proc "c" (p: ^Fts5Context) -> c.int,
 	xPhraseSize:        proc "c" (p: ^Fts5Context, iPhrase: c.int) -> c.int,
 	xInstCount:         proc "c" (p: ^Fts5Context, pnInst: ^c.int) -> c.int,
-	xInst:              proc "c" (p: ^Fts5Context, iIdx: c.int, piPhrase: ^c.int, piCol: ^c.int, piOff: ^c.int) -> c.int,
+	xInst:              proc "c" (p: ^Fts5Context, iIdx: c.int, piPhrase: ^c.int, piCol: ^c.int, piOff: ^c.int) -> Result,
 	xRowid:             proc "c" (p: ^Fts5Context) -> int64,
-	xColumnText:        proc "c" (p: ^Fts5Context, iCol: c.int, pz: ^cstring16, pn: ^c.int) -> c.int,
-	xColumnSize:        proc "c" (p: ^Fts5Context, iCol: c.int, pnToken: ^c.int) -> c.int,
+	xColumnText:        proc "c" (p: ^Fts5Context, iCol: c.int, pz: ^cstring16, pn: ^c.int) -> Result,
+	xColumnSize:        proc "c" (p: ^Fts5Context, iCol: c.int, pnToken: ^c.int) -> Result,
 	xQueryPhrase: proc "c" (
 		p:         ^Fts5Context, 
 		iPhrase:   c.int, 
 		pUserData: rawptr, 
-		cb:        proc "c" (^Fts5ExtensionApi, ^Fts5Context, rawptr) -> c.int,
-	) -> c.int,
-	xSetAuxdata:        proc "c" (p: ^Fts5Context, pAux: rawptr, xDelete: proc "c" (rawptr)) -> c.int,
+		cb:        proc "c" (^Fts5ExtensionApi, ^Fts5Context, rawptr) -> Result,
+	) -> Result,
+	xSetAuxdata:        proc "c" (p: ^Fts5Context, pAux: rawptr, xDelete: proc "c" (rawptr)) -> Result,
 	xGetAuxdata:        proc "c" (p: ^Fts5Context, bClear: b32) -> rawptr,
-	xPhraseFirst:       proc "c" (p: ^Fts5Context, iPhrase: c.int, pIter: ^Fts5PhraseIter, p1: ^c.int, p2: ^int) -> c.int,
+	xPhraseFirst:       proc "c" (p: ^Fts5Context, iPhrase: c.int, pIter: ^Fts5PhraseIter, p1: ^c.int, p2: ^int) -> Result,
 	xPhraseNext:        proc "c" (p: ^Fts5Context, pIter: ^Fts5PhraseIter, piCol: ^c.int, piOff: ^c.int),
-	xPhraseFirstColumn: proc "c" (p: ^Fts5Context, iPhrase: c.int, pIter: ^Fts5PhraseIter, p1: ^int) -> c.int,
+	xPhraseFirstColumn: proc "c" (p: ^Fts5Context, iPhrase: c.int, pIter: ^Fts5PhraseIter, p1: ^int) -> Result,
 	xPhraseNextColumn:  proc "c" (p: ^Fts5Context, pIter: ^Fts5PhraseIter, piCol: ^c.int),
 
 	/* Below this point are iVersion>=3 only */
@@ -2355,18 +2357,18 @@ Fts5ExtensionApi :: struct {
 		iToken:  c.int,
 		ppToken: ^cstring, 
 		pnToken: ^c.int,
-	) -> c.int,
-	xInstToken: proc "c" (p: ^Fts5Context, iIdx: c.int, iToken: c.int, p1: ^cstring, p2: ^c.int) -> c.int,
+	) -> Result,
+	xInstToken: proc "c" (p: ^Fts5Context, iIdx: c.int, iToken: c.int, p1: ^cstring, p2: ^c.int) -> Result,
 
 	/* Below this point are iVersion>=4 only */
-	xColumnLocale:      proc "c" (p: ^Fts5Context, iCol: c.int, pz: ^cstring, pn: ^c.int) -> c.int,
+	xColumnLocale:      proc "c" (p: ^Fts5Context, iCol: c.int, pz: ^cstring, pn: ^c.int) -> Result,
 	xTokenize_v2: proc "c" (
 		p: ^Fts5Context,
 		pText:   cstring, nText:   c.int,  /* Text to tokenize */
 		pLocale: cstring, nLocale: c.int,  /* Locale to pass to tokenizer */
 		pCtx:    rawptr,                   /* Context passed to xToken() */
-		xToken:  proc "c" (rawptr, c.int, cstring, c.int, c.int, c.int) -> c.int,  /* Callback */
-	) -> c.int,
+		xToken:  proc "c" (rawptr, c.int, cstring, c.int, c.int, c.int) -> Result,  /* Callback */
+	) -> Result,
 }
 
 
@@ -2375,7 +2377,7 @@ Fts5Tokenizer :: struct {}
 fts5_tokenizer_v2 :: struct {
 	iVersion:  c.int, /* Currently always 2 */
 
-	xCreate:   proc "c" (p: rawptr, azArg: [^]cstring, nArg: c.int, ppOut: ^^Fts5Tokenizer) -> c.int,
+	xCreate:   proc "c" (p: rawptr, azArg: [^]cstring, nArg: c.int, ppOut: ^^Fts5Tokenizer) -> Result,
 	xDelete:   proc "c" (^Fts5Tokenizer),
 	xTokenize: proc "c" (
 		p:       ^Fts5Tokenizer,
@@ -2392,13 +2394,13 @@ fts5_tokenizer_v2 :: struct {
 			nToken: c.int,           /* Size of token in bytes */
 			iStart: c.int,           /* Byte offset of token within input text */
 			iEnd:   c.int,           /* Byte offset of end of token within input text */
-		) -> c.int,
-	) -> c.int,
+		) -> Result,
+	) -> Result,
 }
 
 
 fts5_tokenizer :: struct {
-	xCreate: proc "c" (p: rawptr, azArg: [^]cstring, nArg: c.int, ppOut: ^^Fts5Tokenizer) -> c.int,
+	xCreate: proc "c" (p: rawptr, azArg: [^]cstring, nArg: c.int, ppOut: ^^Fts5Tokenizer) -> Result,
 	xDelete: proc "c" (^Fts5Tokenizer),
 	xTokenize: proc "c" (
 		p:     ^Fts5Tokenizer,
@@ -2413,8 +2415,8 @@ fts5_tokenizer :: struct {
 			nToken: c.int,           /* Size of token in bytes */
 			iStart: c.int,           /* Byte offset of token within input text */
 			iEnd:   c.int,           /* Byte offset of end of token within input text */
-		) -> c.int,
-	) -> c.int,
+		) -> Result,
+	) -> Result,
 }
 
 
@@ -2428,7 +2430,7 @@ fts5_api :: struct {
 		pUserData:  rawptr,
 		pTokenizer: ^fts5_tokenizer,
 		xDestroy:   proc "c" (rawptr),
-	) -> c.int,
+	) -> Result,
 
 	/* Find an existing tokenizer */
 	xFindTokenizer: proc "c" (
@@ -2436,7 +2438,7 @@ fts5_api :: struct {
 		zName:      cstring,
 		ppUserData: ^rawptr,
 		pTokenizer: ^fts5_tokenizer,
-	) -> c.int,
+	) -> Result,
 
 	/* Create a new auxiliary function */
 	xCreateFunction: proc "c" (
@@ -2445,7 +2447,7 @@ fts5_api :: struct {
 		pUserData: rawptr,
 		xFunction: fts5_extension_function,
 		xDestroy: proc "c" (rawptr),
-	) -> c.int,
+	) -> Result,
 
 	/* APIs below this point are only available if iVersion>=3 */
 
@@ -2456,7 +2458,7 @@ fts5_api :: struct {
 		pUserData:  rawptr,
 		pTokenizer: ^fts5_tokenizer_v2,
 		xDestroy: proc "c" (rawptr),
-	) -> c.int,
+	) -> Result,
 
 	/* Find an existing tokenizer */
 	xFindTokenizer_v2: proc "c" (
@@ -2464,11 +2466,11 @@ fts5_api :: struct {
 		zName:       cstring,
 		ppUserData:  ^rawptr,
 		ppTokenizer: ^^fts5_tokenizer_v2,
-	) -> c.int,
+	) -> Result,
 }
 
 
-FT5_Tokenize_Flags :: bit_set[FT5_Tokenize_Flag; c.int] /*TODO*/
+FT5_Tokenize_Flags :: bit_set[FT5_Tokenize_Flag; c.int]
 FT5_Tokenize_Flag :: enum c.int {
 	QUERY    = 0,
 	PREFIX   = 1,
@@ -2476,7 +2478,7 @@ FT5_Tokenize_Flag :: enum c.int {
 	AUX      = 3,
 }
 
-FT5_Token_Flags :: bit_set[FT5_Token_Flag; c.int] /*TODO*/
+FT5_Token_Flags :: bit_set[FT5_Token_Flag; c.int]
 FT5_Token_Flag :: enum c.int {
 	COLOCATED = 0, /* Same position as prev. token */
 }
