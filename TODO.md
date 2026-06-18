@@ -1,4 +1,6 @@
-Have cstring & [^]u8 versions of procs that take optional NULL term
+- [X] Have cstring & [^]u8 versions of procs that take optional NULL term
+- [X] Convert `c.int` to `Result` where needed
+- [ ] Align Things `:)`
 
 ```odin
 package main
