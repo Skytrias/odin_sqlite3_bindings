@@ -1,0 +1,16 @@
+*.a
+*.o
+*.def
+*.exp
+*.lib
+*.dll
+*.pdb
+*.exe
+*.zip
+*.db
+*.json
+*.rdi
+*.rad
+*.radproject
+
+main.odin

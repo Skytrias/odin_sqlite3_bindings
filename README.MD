@@ -1,0 +1,1 @@
+SQLITE3 bindings for Odin. Made agianst the SQLITE3 3.53.2 amalgamation.
