@@ -10,7 +10,7 @@ USE_SYSTEM_LIB :: #config(SQLITE_USE_SYSTEM_LIB, true)
 SQLITE_DEBUG   :: #config(SQLITE_DEBUG, ODIN_DEBUG)
 
 when ODIN_OS == .Windows {
-	@(extra_linker_flags="/DEFAULTLIB:libcmt")
+	@(extra_linker_flags="/DEFAULTLIB:libcmt" when !USE_SYSTEM_LIB else "")
 	foreign import lib {(
 		"./lib/sqlite3_debug.lib" when SQLITE_DEBUG   else 
 		"./lib/sqlite3_dll.lib"   when SQLITE_SHARED  else 
