@@ -4,17 +4,18 @@ import "core:c"
 
 // Use dynamicly linked locally built binaries.
 SQLITE_SHARED  :: #config(SQLITE_SHARED, false)
-// Use System binaries on non-Windows targets.
-USE_SYSTEM_LIB :: #config(SQLITE_USE_SYSTEM_LIB, false)
+// Use System binaries.
+USE_SYSTEM_LIB :: #config(SQLITE_USE_SYSTEM_LIB, true)
 // Assumes locally built static binaries. Will not use System binaries.
 SQLITE_DEBUG   :: #config(SQLITE_DEBUG, ODIN_DEBUG)
 
 when ODIN_OS == .Windows {
 	@(extra_linker_flags="/DEFAULTLIB:libcmt")
 	foreign import lib {(
-		"./lib/sqlite3_debug.lib" when SQLITE_DEBUG else 
-		"./lib/sqlite3_dll.lib"   when SQLITE_SHARED else 
-		"./lib/sqlite3_lib.lib"
+		"./lib/sqlite3_debug.lib" when SQLITE_DEBUG   else 
+		"./lib/sqlite3_dll.lib"   when SQLITE_SHARED  else 
+		"system:winsqlite3.lib"   when USE_SYSTEM_LIB else
+		"./lib/sqlite3_dll.lib"
 	)}
 
 } else {
