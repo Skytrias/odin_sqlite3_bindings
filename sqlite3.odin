@@ -2,12 +2,18 @@ package sqlite3
 
 import "core:c"
 
-// Use dynamicly linked locally built binaries.
+// Use dynamicly linked binaries.
 SQLITE_SHARED  :: #config(SQLITE_SHARED, false)
+
 // Use System binaries.
-USE_SYSTEM_LIB :: #config(SQLITE_USE_SYSTEM_LIB, true)
+USE_SYSTEM_LIB :: #config(SQLITE_SYSTEM_LIB, true)
+
 // Assumes locally built static binaries. Will not use System binaries.
 SQLITE_DEBUG   :: #config(SQLITE_DEBUG, ODIN_DEBUG)
+
+// Include the SQLite Encryption Extension enpoints
+ENABLE_SEE :: #config(SQLITE_SEE, false)
+
 
 when ODIN_OS == .Windows {
 	@(extra_linker_flags="/DEFAULTLIB:libcmt" when !USE_SYSTEM_LIB else "")
@@ -19,9 +25,14 @@ when ODIN_OS == .Windows {
 	)}
 
 } else {
-	when USE_SYSTEM_LIB && !SQLITE_DEBUG && !SQLITE_SHARED {
-		LIB_PATH :: "system:libsqlite3"
-		// LIB_PATH :: "system:sqlite3"
+	when USE_SYSTEM_LIB && !SQLITE_DEBUG {
+		@(private) LIB_EXT :: (
+			".dylib" when ODIN_OS == .Darwin else 
+			".so"
+		) when SQLITE_SHARED else ".a"
+
+		LIB_PATH :: "system:libsqlite3" + LIB_EXT
+		// LIB_PATH :: "system:sqlite3" + LIB_EXT
 
 	} else when ODIN_OS == .Darwin {
 		when ODIN_ARCH == .arm64 {
@@ -183,9 +194,9 @@ foreign lib {
 		pUserData: rawptr,
 	) -> Auth_Res ---
 
-	@(deprecated="Use sqlite3.trace_v2() instead")
+	// @(deprecated="Use sqlite3.trace_v2() instead")
 	trace :: proc(db: ^sqlite3, xTrace: proc "c" (rawptr, cstring), pUserData: rawptr) -> rawptr ---
-	@(deprecated="Use sqlite3.trace_v2() instead")
+	// @(deprecated="Use sqlite3.trace_v2() instead")
 	profile :: proc(db: ^sqlite3, xProfile: proc "c" (rawptr, cstring, uint64), pUserData: rawptr) -> rawptr ---
 
    trace_v2 :: proc(
@@ -603,7 +614,7 @@ foreign lib {
 	soft_heap_limit64 :: proc(N: int64) -> int64 ---
 	hard_heap_limit64 :: proc(N: int64) -> int64 ---
 
-	@(deprecated="Use sqlite3.soft_heap_limit64() instead")
+	// @(deprecated="Use sqlite3.soft_heap_limit64() instead")
 	soft_heap_limit :: proc(N: c.int) ---
 
 	table_column_metadata :: proc(
@@ -1844,6 +1855,32 @@ Match_Res :: enum c.int {
 }
 
 
+when ENABLE_SEE {
+	@(default_calling_convention="c", link_prefix="sqlite3_")
+	foreign lib { 
+		key :: proc(
+			db: ^sqlite3,              /* Database to be rekeyed */
+			pKey: rawptr, nKey: c.int  /* The key, and the length of the key in bytes */
+		) -> Result ---
+		key_v2 :: proc(
+			db: ^sqlite3,              /* Database to be rekeyed */
+			zDbName: cstring,          /* Name of the database */
+			pKey: rawptr, nKey: c.int  /* The key, and the length of the key in bytes */
+		) -> Result ---
+
+		rekey :: proc(
+			db: ^sqlite3,              /* Database to be rekeyed */
+			pKey: rawptr, nKey: c.int  /* The new key, and the length of the key in bytes */
+		) -> Result ---
+		rekey_v2 :: proc(
+			db: ^sqlite3,              /* Database to be rekeyed */
+			zDbName: cstring,          /* Name of the database */
+			pKey: rawptr, nKey: c.int  /* The new key, and the length of the key in bytes */
+		) -> Result ---
+	}
+}
+
+
 
 
 /******** Begin file sqlite3rtree.h *********/
@@ -2494,7 +2531,7 @@ api_routines :: struct {
 	aggregate_context:      proc "c" (ctx: ^sqlite3_context, nBytes: c.int) -> rawptr,
 	aggregate_count:        proc "c" (ctx: ^sqlite3_context) -> c.int,
 	bind_blob:              proc "c" (pStmt: ^stmt, idx: c.int, data: rawptr, n: c.int, d: proc "c" (rawptr) = SQLITE_STATIC) -> Result,
-	bind_double:            proc "c" (pStmt: ^stmt, idx: c.int, data: rawptr, n: uint64, d: proc "c" (rawptr) = SQLITE_STATIC) -> Result,
+	bind_double:            proc "c" (pStmt: ^stmt, idx: c.int, data: double) -> Result,
 	bind_int:               proc "c" (pStmt: ^stmt, idx: c.int, data: c.int) -> Result,
 	bind_int64:             proc "c" (pStmt: ^stmt, idx: c.int, data: int64) -> Result,
 	bind_null:              proc "c" (pStmt: ^stmt, idx: c.int) -> Result,
@@ -2612,7 +2649,7 @@ api_routines :: struct {
 	
 	/* Added by 3.3.13 */
 	prepare_v2:             proc "c" (db: ^sqlite3, zSql: cstring, nByte: c.int, ppStmt: ^^stmt, pzTail: Maybe(^[^]u8) = nil) -> Result,
-	prepare16_v2:          proc "c" (db: ^sqlite3, zSql: cstring16, nByte: c.int, ppStmt: ^^stmt, pzTail: Maybe(^[^]u16) = nil) -> Result,
+	prepare16_v2:           proc "c" (db: ^sqlite3, zSql: cstring16, nByte: c.int, ppStmt: ^^stmt, pzTail: Maybe(^[^]u16) = nil) -> Result,
 	clear_bindings:         proc "c" (pStmt: ^stmt) -> Result,
 	
 	/* Added by 3.4.1 */
@@ -2839,4 +2876,288 @@ loadext_entry :: proc "c" (
 	pzErrMsg: ^cstring,      /* Used to set error string on failure. */
 	pThunk:   ^api_routines, /* Extension API function pointers. */
 ) -> c.int
+
+api_routines_init :: proc(a: ^api_routines) {
+	a^ = {
+		aggregate_context      = aggregate_context,
+		aggregate_count        = aggregate_count,
+		bind_blob              = bind_blob,
+		bind_double            = bind_double,
+		bind_int               = bind_int,
+		bind_int64             = bind_int64,
+		bind_null              = bind_null,
+		bind_parameter_count   = bind_parameter_count,
+		bind_parameter_index   = bind_parameter_index,
+		bind_parameter_name    = bind_parameter_name,
+		bind_text              = bind_text,
+		bind_text16            = bind_text16,
+		bind_value             = bind_value,
+		busy_handler           = busy_handler,
+		busy_timeout           = busy_timeout,
+		changes                = changes,
+		close                  = close,
+		collation_needed       = collation_needed,
+		collation_needed16     = collation_needed16,
+		column_blob            = column_blob,
+		column_bytes           = column_bytes,
+		column_bytes16         = column_bytes16,
+		column_count           = column_count,
+		column_database_name   = column_database_name,
+		column_database_name16 = column_database_name16,
+		column_decltype        = column_decltype,
+		column_decltype16      = column_decltype16,
+		column_double          = column_double,
+		column_int             = column_int,
+		column_int64           = column_int64,
+		column_name            = column_name,
+		column_name16          = column_name16,
+		column_origin_name     = column_origin_name,
+		column_origin_name16   = column_origin_name16,
+		column_table_name      = column_table_name,
+		column_table_name16    = column_table_name16,
+		column_text            = column_text,
+		column_text16          = column_text16,
+		column_type            = column_type,
+		column_value           = column_value,
+		commit_hook            = commit_hook,
+		complete               = complete,
+		complete16             = complete16,
+		create_collation       = create_collation,
+		create_collation16     = create_collation16,
+		create_function        = create_function,
+		create_function16      = create_function16,
+		create_module          = create_module,
+		data_count             = data_count,
+		db_handle              = db_handle,
+		declare_vtab           = declare_vtab,
+		enable_shared_cache    = enable_shared_cache,
+		errcode                = errcode,
+		errmsg                 = errmsg,
+		errmsg16               = errmsg16,
+		exec                   = exec,
+		expired                = expired,
+		finalize               = finalize,
+		free                   = free,
+		free_table             = free_table,
+		get_autocommit         = get_autocommit,
+		get_auxdata            = get_auxdata,
+		get_table              = get_table,
+		global_recover         = global_recover,
+		interruptx             = interrupt,
+		last_insert_rowid      = last_insert_rowid,
+		libversion             = libversion,
+		libversion_number      = libversion_number,
+		malloc                 = malloc,
+		mprintf                = mprintf,
+		open                   = open,
+		open16                 = open16,
+		prepare                = prepare,
+		prepare16              = prepare16,
+		profile                = profile,
+		progress_handler       = progress_handler,
+		realloc                = realloc,
+		reset                  = reset,
+		result_blob            = result_blob,
+		result_double          = result_double,
+		result_error           = result_error,
+		result_error16         = result_error16,
+		result_int             = result_int,
+		result_int64           = result_int64,
+		result_null            = result_null,
+		result_text            = result_text,
+		result_text16          = result_text16,
+		result_text16be        = result_text16be,
+		result_text16le        = result_text16le,
+		result_value           = result_value,
+		rollback_hook          = rollback_hook,
+		cset_authorizer        = set_authorizer,
+		set_auxdata            = set_auxdata,
+		xsnprintf              = snprintf,
+		step                   = step,
+		table_column_metadata  = table_column_metadata,
+		thread_cleanup         = thread_cleanup,
+		total_changes          = total_changes,
+		trace                  = trace,
+		transfer_bindings      = transfer_bindings,
+		update_hook            = update_hook,
+		user_data              = user_data,
+		value_blob             = value_blob,
+		value_bytes            = value_bytes,
+		value_bytes16          = value_bytes16,
+		value_double           = value_double,
+		value_int              = value_int,
+		value_int64            = value_int64,
+		value_numeric_type     = value_numeric_type,
+		value_text             = value_text,
+		value_text16           = value_text16,
+		value_text16be         = value_text16be,
+		value_text16le         = value_text16le,
+		value_type             = value_type,
+		vmprintf               = vmprintf,
+		overload_function      = overload_function,
+		prepare_v2             = prepare_v2,
+		prepare16_v2           = prepare16_v2,
+		clear_bindings         = clear_bindings,
+		create_module_v2       = create_module_v2,
+		bind_zeroblob          = bind_zeroblob,
+		blob_bytes             = blob_bytes,
+		blob_close             = blob_close,
+		blob_open              = blob_open,
+		blob_read              = blob_read,
+		blob_write             = blob_write,
+		create_collation_v2    = create_collation_v2,
+		file_control           = file_control,
+		memory_highwater       = memory_highwater,
+		memory_used            = memory_used,
+		mutex_alloc            = mutex_alloc,
+		mutex_enter            = mutex_enter,
+		mutex_free             = mutex_free,
+		mutex_leave            = mutex_leave,
+		mutex_try              = mutex_try,
+		open_v2                = open_v2,
+		release_memory         = release_memory,
+		result_error_nomem     = result_error_nomem,
+		result_error_toobig    = result_error_toobig,
+		sleep                  = sleep,
+		soft_heap_limit        = soft_heap_limit,
+		vfs_find               = vfs_find,
+		vfs_register           = vfs_register,
+		vfs_unregister         = vfs_unregister,
+		xthreadsafe            = threadsafe,
+		result_zeroblob        = result_zeroblob,
+		result_error_code      = result_error_code,
+		test_control           = test_control,
+		randomness             = randomness,
+		context_db_handle      = context_db_handle,
+		extended_result_codes  = extended_result_codes,
+		limit                  = limit,
+		next_stmt              = next_stmt,
+		sql                    = sql,
+		status                 = status,
+		backup_finish          = backup_finish,
+		backup_init            = backup_init,
+		backup_pagecount       = backup_pagecount,
+		backup_remaining       = backup_remaining,
+		backup_step            = backup_step,
+		compileoption_get      = compileoption_get,
+		compileoption_used     = compileoption_used,
+		create_function_v2     = create_function_v2,
+		db_config              = db_config,
+		db_mutex               = db_mutex,
+		db_status              = db_status,
+		extended_errcode       = extended_errcode,
+		log                    = log,
+		soft_heap_limit64      = soft_heap_limit64,
+		sourceid               = sourceid,
+		stmt_status            = stmt_status,
+		strnicmp               = strnicmp,
+		unlock_notify          = unlock_notify,
+		wal_autocheckpoint     = wal_autocheckpoint,
+		wal_checkpoint         = wal_checkpoint,
+		wal_hook               = wal_hook,
+		blob_reopen            = blob_reopen,
+		vtab_config            = vtab_config,
+		vtab_on_conflict       = vtab_on_conflict,
+		close_v2               = close_v2,
+		db_filename            = db_filename,
+		db_readonly            = db_readonly,
+		db_release_memory      = db_release_memory,
+		errstr                 = errstr,
+		stmt_busy              = stmt_busy,
+		stmt_readonly          = stmt_readonly,
+		stricmp                = stricmp,
+		uri_boolean            = uri_boolean,
+		uri_int64              = uri_int64,
+		xvsnprintf             = vsnprintf,
+		wal_checkpoint_v2      = wal_checkpoint_v2,
+		auto_extension         = auto_extension,
+		bind_blob64            = bind_blob64,
+		bind_text64            = bind_text64,
+		cancel_auto_extension  = cancel_auto_extension,
+		load_extension         = load_extension,
+		malloc64               = malloc64,
+		msize                  = msize,
+		realloc64              = realloc64,
+		reset_auto_extension   = reset_auto_extension,
+		result_blob64          = result_blob64,
+		result_text64          = result_text64,
+		strglob                = strglob,
+		value_dup              = value_dup,
+		value_free             = value_free,
+		result_zeroblob64      = result_zeroblob64,
+		bind_zeroblob64        = bind_zeroblob64,
+		value_subtype          = value_subtype,
+		result_subtype         = result_subtype,
+		status64               = status64,
+		strlike                = strlike,
+		db_cacheflush          = db_cacheflush,
+		system_errno           = system_errno,
+		trace_v2               = trace_v2,
+		expanded_sql           = expanded_sql,
+		set_last_insert_rowid  = set_last_insert_rowid,
+		prepare_v3             = prepare_v3,
+		prepare16_v3           = prepare16_v3_str,
+		bind_pointer           = bind_pointer,
+		result_pointer         = result_pointer,
+		value_pointer          = value_pointer,
+		vtab_nochange          = vtab_nochange,
+		value_nochange         = value_nochange,
+		vtab_collation         = vtab_collation,
+		keyword_count          = keyword_count,
+		keyword_name           = keyword_name,
+		keyword_check          = keyword_check,
+		str_new                = str_new,
+		str_finish             = str_finish,
+		str_appendf            = str_appendf,
+		str_vappendf           = str_vappendf,
+		str_append             = str_append,
+		str_appendall          = str_appendall,
+		str_appendchar         = str_appendchar,
+		str_reset              = str_reset,
+		str_errcode            = str_errcode,
+		str_length             = str_length,
+		str_value              = str_value,
+		create_window_function = create_window_function,
+		stmt_isexplain         = stmt_isexplain,
+		value_frombind         = value_frombind,
+		drop_modules           = drop_modules,
+		hard_heap_limit64      = hard_heap_limit64,
+		uri_key                = uri_key,
+		filename_database      = filename_database,
+		filename_journal       = filename_journal,
+		filename_wal           = filename_wal,
+		create_filename        = create_filename,
+		free_filename          = free_filename,
+		database_file_object   = database_file_object,
+		txn_state              = txn_state,
+		changes64              = changes64,
+		total_changes64        = total_changes64,
+		autovacuum_pages       = autovacuum_pages,
+		error_offset           = error_offset,
+		vtab_rhs_value         = vtab_rhs_value,
+		vtab_distinct          = vtab_distinct,
+		vtab_in                = vtab_in,
+		vtab_in_first          = vtab_in_first,
+		vtab_in_next           = vtab_in_next,
+		deserialize            = deserialize,
+		serialize              = serialize,
+		db_name                = db_name,
+		value_encoding         = value_encoding,
+		is_interrupted         = is_interrupted,
+		stmt_explain           = stmt_explain,
+		get_clientdata         = get_clientdata,
+		set_clientdata         = set_clientdata,
+		setlk_timeout          = setlk_timeout,
+		set_errmsg             = set_errmsg,
+		db_status64            = db_status64,
+		str_truncate           = str_truncate,
+		str_free               = str_free,
+		carray_bind            = carray_bind,
+		carray_bind_v2         = carray_bind_v2,
+	}
+	when ENABLE_NORMALIZE {
+		a. normalized_sql      = normalized_sql
+	}
+}
+
 /******** End of SQLITE3EXT_H *********/
