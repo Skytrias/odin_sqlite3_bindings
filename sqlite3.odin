@@ -81,13 +81,13 @@ SCM_DATETIME   :: "2026-06-03T19:12:13.350Z"
 
 /******** Begin of SQLITE3_H *********/
 
-OMIT_COMPILEOPTION_DIAGS :: #config(OMIT_COMPILEOPTION_DIAGS, false)
-ENABLE_PREUPDATE_HOOK    :: #config(ENABLE_PREUPDATE_HOOK, false)
-OMIT_FLOATING_POINT      :: #config(OMIT_FLOATING_POINT, false)
-OMIT_SHARED_CACHE        :: #config(OMIT_SHARED_CACHE, false)
-ENABLE_NORMALIZE         :: #config(ENABLE_NORMALIZE, false)
-OMIT_DEPRECATED          :: #config(OMIT_DEPRECATED, false)
-ENABLE_CEROD             :: #config(ENABLE_CEROD, false)
+OMIT_COMPILEOPTION_DIAGS :: #config(SQLITE_OMIT_COMPILEOPTION_DIAGS, false)
+ENABLE_PREUPDATE_HOOK    :: #config(SQLITE_ENABLE_PREUPDATE_HOOK, false)
+OMIT_FLOATING_POINT      :: #config(SQLITE_OMIT_FLOATING_POINT, false)
+OMIT_SHARED_CACHE        :: #config(SQLITE_OMIT_SHARED_CACHE, false)
+ENABLE_NORMALIZE         :: #config(SQLITE_ENABLE_NORMALIZE, false)
+OMIT_DEPRECATED          :: #config(SQLITE_OMIT_DEPRECATED, false)
+ENABLE_CEROD             :: #config(SQLITE_ENABLE_CEROD, false)
 
 SHM_NLOCK :: 8
 
@@ -142,7 +142,7 @@ foreign lib {
 	shutdown   :: proc() -> Result ---
 	os_init    :: proc() -> Result ---
 	os_end     :: proc() -> Result ---
-	config     :: proc(Config, #c_vararg ..any) -> Result ---
+	config     :: proc(op: Config, #c_vararg args: ..any) -> Result ---
 	db_config  :: proc(db: ^sqlite3, op: DB_Config, #c_vararg args: ..any) -> Result ---
 
 	extended_result_codes :: proc(db: ^sqlite3, onoff: b32) -> Result ---
@@ -189,15 +189,10 @@ foreign lib {
 	randomness :: proc(N: c.int, P: [^]byte) ---
 
 	set_authorizer :: proc(
-		db: ^sqlite3,
-		xAuth: proc "c" (rawptr, Action_Code, cstring, cstring, cstring, cstring) -> Auth_Res,
+		db:        ^sqlite3,
+		xAuth:     proc "c" (rawptr, Action_Code, cstring, cstring, cstring, cstring) -> Auth_Res,
 		pUserData: rawptr,
 	) -> Auth_Res ---
-
-	// @(deprecated="Use sqlite3.trace_v2() instead")
-	trace :: proc(db: ^sqlite3, xTrace: proc "c" (rawptr, cstring), pUserData: rawptr) -> rawptr ---
-	// @(deprecated="Use sqlite3.trace_v2() instead")
-	profile :: proc(db: ^sqlite3, xProfile: proc "c" (rawptr, cstring, uint64), pUserData: rawptr) -> rawptr ---
 
    trace_v2 :: proc(
 		db:        ^sqlite3,
@@ -257,115 +252,115 @@ foreign lib {
 
 
 	@(link_name="sqlite3_prepare") prepare_str :: proc(
-		db:      ^sqlite3,      /* Database handle */
-		zSql:    cstring,       /* SQL statement, UTF-8 encoded */
-		nByte:   c.int,         /* Maximum length of zSql in bytes. */
-		ppStmt:  ^^stmt,        /* OUT: Statement handle */
+		db:      ^sqlite3,            /* Database handle */
+		zSql:    cstring,             /* SQL statement, UTF-8 encoded */
+		nByte:   c.int,               /* Maximum length of zSql in bytes. */
+		ppStmt:  ^^stmt,              /* OUT: Statement handle */
 		pzTail:  Maybe(^[^]u8) = nil, /* OUT: Pointer to unused portion of zSql */
 	) -> Result ---
 	@(link_name="sqlite3_prepare_v2") prepare_v2_str :: proc(
-		db:      ^sqlite3,      /* Database handle */
-		zSql:    cstring,       /* SQL statement, UTF-8 encoded */
-		nByte:   c.int,         /* Maximum length of zSql in bytes. */
-		ppStmt:  ^^stmt,        /* OUT: Statement handle */
+		db:      ^sqlite3,            /* Database handle */
+		zSql:    cstring,             /* SQL statement, UTF-8 encoded */
+		nByte:   c.int,               /* Maximum length of zSql in bytes. */
+		ppStmt:  ^^stmt,              /* OUT: Statement handle */
 		pzTail:  Maybe(^[^]u8) = nil, /* OUT: Pointer to unused portion of zSql */
 	) -> Result ---
 	@(link_name="sqlite3_prepare_v3") prepare_v3_str :: proc(
-		db:        ^sqlite3,      /* Database handle */
-		zSql:      cstring,       /* SQL statement, UTF-8 encoded */
-		nByte:     c.int,         /* Maximum length of zSql in bytes. */
-		prepFlags: Prepare_Flags, /* Zero or more SQLITE_PREPARE_ flags */
-		ppStmt:    ^^stmt,        /* OUT: Statement handle */
+		db:        ^sqlite3,            /* Database handle */
+		zSql:      cstring,             /* SQL statement, UTF-8 encoded */
+		nByte:     c.int,               /* Maximum length of zSql in bytes. */
+		prepFlags: Prepare_Flags,       /* Zero or more SQLITE_PREPARE_ flags */
+		ppStmt:    ^^stmt,              /* OUT: Statement handle */
 		pzTail:    Maybe(^[^]u8) = nil, /* OUT: Pointer to unused portion of zSql */
 	) -> Result ---
 
 	@(link_name="sqlite3_prepare") prepare_buf :: proc(
-		db:      ^sqlite3,      /* Database handle */
-		zSql:    [^]u8,         /* SQL statement, UTF-8 encoded */
-		nByte:   c.int,         /* Maximum length of zSql in bytes. */
-		ppStmt:  ^^stmt,        /* OUT: Statement handle */
+		db:      ^sqlite3,            /* Database handle */
+		zSql:    [^]u8,               /* SQL statement, UTF-8 encoded */
+		nByte:   c.int,               /* Maximum length of zSql in bytes. */
+		ppStmt:  ^^stmt,              /* OUT: Statement handle */
 		pzTail:  Maybe(^[^]u8) = nil, /* OUT: Pointer to unused portion of zSql */
 	) -> Result ---
 	@(link_name="sqlite3_prepare_v2") prepare_v2_buf :: proc(
-		db:      ^sqlite3,      /* Database handle */
-		zSql:    [^]u8,         /* SQL statement, UTF-8 encoded */
-		nByte:   c.int,         /* Maximum length of zSql in bytes. */
-		ppStmt:  ^^stmt,        /* OUT: Statement handle */
+		db:      ^sqlite3,            /* Database handle */
+		zSql:    [^]u8,               /* SQL statement, UTF-8 encoded */
+		nByte:   c.int,               /* Maximum length of zSql in bytes. */
+		ppStmt:  ^^stmt,              /* OUT: Statement handle */
 		pzTail:  Maybe(^[^]u8) = nil, /* OUT: Pointer to unused portion of zSql */
 	) -> Result ---
 	@(link_name="sqlite3_prepare_v3") prepare_v3_buf :: proc(
-		db:        ^sqlite3,      /* Database handle */
-		zSql:      [^]u8,         /* SQL statement, UTF-8 encoded */
-		nByte:     c.int,         /* Maximum length of zSql in bytes. */
-		prepFlags: Prepare_Flags, /* Zero or more SQLITE_PREPARE_ flags */
-		ppStmt:    ^^stmt,        /* OUT: Statement handle */
+		db:        ^sqlite3,            /* Database handle */
+		zSql:      [^]u8,               /* SQL statement, UTF-8 encoded */
+		nByte:     c.int,               /* Maximum length of zSql in bytes. */
+		prepFlags: Prepare_Flags,       /* Zero or more SQLITE_PREPARE_ flags */
+		ppStmt:    ^^stmt,              /* OUT: Statement handle */
 		pzTail:    Maybe(^[^]u8) = nil, /* OUT: Pointer to unused portion of zSql */
 	) -> Result ---
 	
 	@(link_name="sqlite3_prepare16") prepare16_str :: proc(
-		db:      ^sqlite3,      /* Database handle */
-		zSql:    cstring16,     /* SQL statement, UTF-16 encoded */
-		nByte:   c.int,         /* Maximum length of zSql in bytes. */
-		ppStmt:  ^^stmt,        /* OUT: Statement handle */
+		db:      ^sqlite3,             /* Database handle */
+		zSql:    cstring16,            /* SQL statement, UTF-16 encoded */
+		nByte:   c.int,                /* Maximum length of zSql in bytes. */
+		ppStmt:  ^^stmt,               /* OUT: Statement handle */
 		pzTail:  Maybe(^[^]u16) = nil, /* OUT: Pointer to unused portion of zSql */
 	) -> Result ---
 	@(link_name="sqlite3_prepare16_v2") prepare16_v2_str :: proc(
-		db:      ^sqlite3,      /* Database handle */
-		zSql:    cstring16,     /* SQL statement, UTF-16 encoded */
-		nByte:   c.int,         /* Maximum length of zSql in bytes. */
-		ppStmt:  ^^stmt,        /* OUT: Statement handle */
+		db:      ^sqlite3,             /* Database handle */
+		zSql:    cstring16,            /* SQL statement, UTF-16 encoded */
+		nByte:   c.int,                /* Maximum length of zSql in bytes. */
+		ppStmt:  ^^stmt,               /* OUT: Statement handle */
 		pzTail:  Maybe(^[^]u16) = nil, /* OUT: Pointer to unused portion of zSql */
 	) -> Result ---
 	@(link_name="sqlite3_prepare16_v3") prepare16_v3_str :: proc(
-		db:        ^sqlite3,      /* Database handle */
-		zSql:      cstring16,     /* SQL statement, UTF-16 encoded */
-		nByte:     c.int,         /* Maximum length of zSql in bytes. */
-		prepFlags: Prepare_Flags, /* Zero or more SQLITE_PREPARE_ flags */
-		ppStmt:    ^^stmt,        /* OUT: Statement handle */
+		db:        ^sqlite3,             /* Database handle */
+		zSql:      cstring16,            /* SQL statement, UTF-16 encoded */
+		nByte:     c.int,                /* Maximum length of zSql in bytes. */
+		prepFlags: Prepare_Flags,        /* Zero or more SQLITE_PREPARE_ flags */
+		ppStmt:    ^^stmt,               /* OUT: Statement handle */
 		pzTail:    Maybe(^[^]u16) = nil, /* OUT: Pointer to unused portion of zSql */
 	) -> Result ---
 
 
 	@(link_name="sqlite3_prepare16") prepare16_buf :: proc(
-		db:      ^sqlite3,      /* Database handle */
-		zSql:    [^]u16,        /* SQL statement, UTF-16 encoded */
-		nByte:   c.int,         /* Maximum length of zSql in bytes. */
-		ppStmt:  ^^stmt,        /* OUT: Statement handle */
+		db:      ^sqlite3,             /* Database handle */
+		zSql:    [^]u16,               /* SQL statement, UTF-16 encoded */
+		nByte:   c.int,                /* Maximum length of zSql in bytes. */
+		ppStmt:  ^^stmt,               /* OUT: Statement handle */
 		pzTail:  Maybe(^[^]u16) = nil, /* OUT: Pointer to unused portion of zSql */
 	) -> Result ---
 	@(link_name="sqlite3_prepare16_v2") prepare16_v2_buf :: proc(
-		db:      ^sqlite3,      /* Database handle */
-		zSql:    [^]u16,        /* SQL statement, UTF-16 encoded */
-		nByte:   c.int,         /* Maximum length of zSql in bytes. */
-		ppStmt:  ^^stmt,        /* OUT: Statement handle */
+		db:      ^sqlite3,             /* Database handle */
+		zSql:    [^]u16,               /* SQL statement, UTF-16 encoded */
+		nByte:   c.int,                /* Maximum length of zSql in bytes. */
+		ppStmt:  ^^stmt,               /* OUT: Statement handle */
 		pzTail:  Maybe(^[^]u16) = nil, /* OUT: Pointer to unused portion of zSql */
 	) -> Result ---
 	@(link_name="sqlite3_prepare16_3") prepare16_v3_buf :: proc(
-		db:        ^sqlite3,      /* Database handle */
-		zSql:      [^]u16,        /* SQL statement, UTF-16 encoded */
-		nByte:     c.int,         /* Maximum length of zSql in bytes. */
-		prepFlags: Prepare_Flags, /* Zero or more SQLITE_PREPARE_ flags */
-		ppStmt:    ^^stmt,        /* OUT: Statement handle */
+		db:        ^sqlite3,             /* Database handle */
+		zSql:      [^]u16,               /* SQL statement, UTF-16 encoded */
+		nByte:     c.int,                /* Maximum length of zSql in bytes. */
+		prepFlags: Prepare_Flags,        /* Zero or more SQLITE_PREPARE_ flags */
+		ppStmt:    ^^stmt,               /* OUT: Statement handle */
 		pzTail:    Maybe(^[^]u16) = nil, /* OUT: Pointer to unused portion of zSql */
 	) -> Result ---
 
 
-	sql          :: proc(pStmt: ^stmt) -> cstring ---
-	expanded_sql :: proc(pStmt: ^stmt) -> cstring ---
+	sql            :: proc(pStmt: ^stmt) -> cstring ---
+	expanded_sql   :: proc(pStmt: ^stmt) -> cstring ---
 
 	stmt_readonly  :: proc(pStmt: ^stmt) -> b32 ---
 	stmt_isexplain :: proc(pStmt: ^stmt) -> b32 ---
 	stmt_explain   :: proc(pStmt: ^stmt, eMode: c.int) -> Result ---
 	stmt_busy      :: proc(pStmt: ^stmt) -> b32 ---
 
-	bind_blob    :: proc(pStmt: ^stmt, idx: c.int, data: rawptr, n: c.int,  d: proc "c" (rawptr) = SQLITE_STATIC) -> Result ---
-	bind_blob64  :: proc(pStmt: ^stmt, idx: c.int, data: rawptr, n: uint64, d: proc "c" (rawptr) = SQLITE_STATIC) -> Result ---
-	bind_double  :: proc(pStmt: ^stmt, idx: c.int, data: double) -> Result ---
-	bind_int     :: proc(pStmt: ^stmt, idx: c.int, data: c.int) -> Result ---
-	bind_int64   :: proc(pStmt: ^stmt, idx: c.int, data: int64) -> Result ---
-	bind_null    :: proc(pStmt: ^stmt, idx: c.int) -> Result ---
-	bind_value   :: proc(pStmt: ^stmt, idx: c.int, data: ^value) -> Result ---
-	bind_pointer :: proc(pStmt: ^stmt, idx: c.int, data: rawptr, t: cstring, d: proc "c" (rawptr) = SQLITE_STATIC) -> Result ---
+	bind_blob      :: proc(pStmt: ^stmt, idx: c.int, data: rawptr, n: c.int,  d: proc "c" (rawptr) = SQLITE_STATIC) -> Result ---
+	bind_blob64    :: proc(pStmt: ^stmt, idx: c.int, data: rawptr, n: uint64, d: proc "c" (rawptr) = SQLITE_STATIC) -> Result ---
+	bind_double    :: proc(pStmt: ^stmt, idx: c.int, data: double) -> Result ---
+	bind_int       :: proc(pStmt: ^stmt, idx: c.int, data: c.int) -> Result ---
+	bind_int64     :: proc(pStmt: ^stmt, idx: c.int, data: int64) -> Result ---
+	bind_null      :: proc(pStmt: ^stmt, idx: c.int) -> Result ---
+	bind_value     :: proc(pStmt: ^stmt, idx: c.int, data: ^value) -> Result ---
+	bind_pointer   :: proc(pStmt: ^stmt, idx: c.int, data: rawptr, t: cstring, d: proc "c" (rawptr) = SQLITE_STATIC) -> Result ---
 
 	@(link_name="sqlite3_bind_text")
 	bind_text_str   :: proc(pStmt: ^stmt, idx: c.int, data: cstring,   n: c.int,  d: proc "c" (rawptr) = SQLITE_STATIC) -> Result ---
@@ -373,14 +368,11 @@ foreign lib {
 	bind_text16_str :: proc(pStmt: ^stmt, idx: c.int, data: cstring16, n: c.int,  d: proc "c" (rawptr) = SQLITE_STATIC) -> Result ---
 	
 	@(link_name="sqlite3_bind_text")
-	bind_text_buf   :: proc(pStmt: ^stmt, idx: c.int, data: [^]u8,  n: c.int, d: proc "c" (rawptr) = SQLITE_STATIC) -> Result ---
+	bind_text_buf   :: proc(pStmt: ^stmt, idx: c.int, data: [^]u8,  n: c.int,  d: proc "c" (rawptr) = SQLITE_STATIC) -> Result ---
 	@(link_name="sqlite3_bind_text16")
-	bind_text16_buf :: proc(pStmt: ^stmt, idx: c.int, data: [^]u16, n: c.int, d: proc "c" (rawptr) = SQLITE_STATIC) -> Result ---
-
-	bind_text64  :: proc(pStmt: ^stmt, idx: c.int, data: rawptr, n: uint64, d: proc "c" (rawptr), encoding: Text_Encoding_U8) -> Result ---
+	bind_text16_buf :: proc(pStmt: ^stmt, idx: c.int, data: [^]u16, n: c.int,  d: proc "c" (rawptr) = SQLITE_STATIC) -> Result ---
+	bind_text64     :: proc(pStmt: ^stmt, idx: c.int, data: rawptr, n: uint64, d: proc "c" (rawptr) = SQLITE_STATIC, encoding: Text_Encoding_U8) -> Result ---
 	
-	
-
 	bind_zeroblob   :: proc(pStmt: ^stmt, idx: c.int, n: c.int)  -> Result ---
 	bind_zeroblob64 :: proc(pStmt: ^stmt, idx: c.int, n: uint64) -> Result ---
 
@@ -451,7 +443,7 @@ foreign lib {
 		xFunc:         proc "c" (^sqlite3_context, c.int, ^^value),
 		xStep:         proc "c" (^sqlite3_context, c.int, ^^value),
 		xFinal:        proc "c" (^sqlite3_context),
-		xDestroy:      proc "c" (rawptr),
+		xDestroy:      proc "c" (rawptr) = SQLITE_STATIC,
 	) -> Result ---
 	create_window_function :: proc(
 		db:            ^sqlite3,
@@ -463,7 +455,7 @@ foreign lib {
 		xFinal:        proc "c" (^sqlite3_context),
 		xValue:        proc "c" (^sqlite3_context),
 		xInverse:      proc "c" (^sqlite3_context, c.int, ^^value),
-		xDestroy:      proc "c" (rawptr),
+		xDestroy:      proc "c" (pApp: rawptr) = SQLITE_STATIC,
 	) -> Result ---
 
 	value_blob         :: proc(pVal: ^value) -> [^]byte ---
@@ -494,13 +486,13 @@ foreign lib {
 	context_db_handle :: proc(pCtx: ^sqlite3_context) -> ^sqlite3 ---
 
 	get_auxdata :: proc(pCtx: ^sqlite3_context, N: c.int) -> rawptr ---
-	set_auxdata :: proc(pCtx: ^sqlite3_context, N: c.int, p: rawptr, d: proc "c" (rawptr) = SQLITE_STATIC) ---
+	set_auxdata :: proc(pCtx: ^sqlite3_context, N: c.int, p: rawptr, d: proc "c" (p: rawptr) = SQLITE_STATIC) ---
 
 	get_clientdata :: proc(db: ^sqlite3, zName: cstring) -> rawptr ---
-	set_clientdata :: proc(db: ^sqlite3, zName: cstring, pData: rawptr, xDestructor: proc "c" (rawptr)) -> Result ---
+	set_clientdata :: proc(db: ^sqlite3, zName: cstring, pData: rawptr, xDestructor: proc "c" (pData: rawptr) = SQLITE_STATIC) -> Result ---
 
-	result_blob         :: proc(pCtx: ^sqlite3_context, z: rawptr, n: c.int,  xDel: proc "c" (rawptr) = SQLITE_STATIC) ---
-	result_blob64       :: proc(pCtx: ^sqlite3_context, z: rawptr, n: uint64, xDel: proc "c" (rawptr) = SQLITE_STATIC) ---
+	result_blob         :: proc(pCtx: ^sqlite3_context, z: rawptr, n: c.int,  xDel: proc "c" (z: rawptr) = SQLITE_STATIC) ---
+	result_blob64       :: proc(pCtx: ^sqlite3_context, z: rawptr, n: uint64, xDel: proc "c" (z: rawptr) = SQLITE_STATIC) ---
 	result_double       :: proc(pCtx: ^sqlite3_context, rVal: double) ---
 	result_error_toobig :: proc(pCtx: ^sqlite3_context) ---
 	result_error_nomem  :: proc(pCtx: ^sqlite3_context) ---
@@ -508,30 +500,29 @@ foreign lib {
 	result_int          :: proc(pCtx: ^sqlite3_context, data: c.int) ---
 	result_int64        :: proc(pCtx: ^sqlite3_context, data: int64) ---
 	result_null         :: proc(pCtx: ^sqlite3_context) ---
-	result_text16le     :: proc(pCtx: ^sqlite3_context, data: [^]u16le,  n: c.int,  xDel: proc "c" (rawptr) = SQLITE_STATIC) ---
-	result_text16be     :: proc(pCtx: ^sqlite3_context, data: [^]u16be,  n: c.int,  xDel: proc "c" (rawptr) = SQLITE_STATIC) ---
+	result_text16le     :: proc(pCtx: ^sqlite3_context, data: [^]u16le, n: c.int, xDel: proc "c" (data: rawptr) = SQLITE_STATIC) ---
+	result_text16be     :: proc(pCtx: ^sqlite3_context, data: [^]u16be, n: c.int, xDel: proc "c" (data: rawptr) = SQLITE_STATIC) ---
 	result_value        :: proc(pCtx: ^sqlite3_context, data: ^value) ---
-	result_pointer      :: proc(pCtx: ^sqlite3_context, data: rawptr, t: cstring, xDel: proc "c" (rawptr) = SQLITE_STATIC) ---
+	result_pointer      :: proc(pCtx: ^sqlite3_context, data: rawptr, t: cstring, xDel: proc "c" (data: rawptr) = SQLITE_STATIC) ---
 
 	@(link_name="sqlite3_result_error")
-	result_error_str   :: proc(pCtx: ^sqlite3_context, data: cstring,   n: c.int) ---
+	result_error_str   :: proc(pCtx: ^sqlite3_context, data: cstring, n: c.int) ---
 	@(link_name="sqlite3_result_error16")
 	result_error16_str :: proc(pCtx: ^sqlite3_context, data: cstring16, n: c.int) ---
 	@(link_name="sqlite3_result_error")
-	result_error_buf   :: proc(pCtx: ^sqlite3_context, data: [^]u8,   n: c.int) ---
+	result_error_buf   :: proc(pCtx: ^sqlite3_context, data: [^]u8, n: c.int) ---
 	@(link_name="sqlite3_result_error16")
 	result_error16_buf :: proc(pCtx: ^sqlite3_context, data: [^]u16, n: c.int) ---
 
 	@(link_name="sqlite3_result_text")
-	result_text_str   :: proc(pCtx: ^sqlite3_context, data: cstring,   n: c.int,  d: proc "c" (rawptr) = SQLITE_STATIC) ---
+	result_text_str   :: proc(pCtx: ^sqlite3_context, data: cstring, n: c.int,   d: proc "c" (data: rawptr) = SQLITE_STATIC) ---
 	@(link_name="sqlite3_result_text")
-	result_text_buf   :: proc(pCtx: ^sqlite3_context, data: [^]u8,     n: c.int,  d: proc "c" (rawptr) = SQLITE_STATIC) ---
+	result_text_buf   :: proc(pCtx: ^sqlite3_context, data: [^]u8, n: c.int,     d: proc "c" (data: rawptr) = SQLITE_STATIC) ---
 	@(link_name="sqlite3_result16_text")
-	result_text16_str :: proc(pCtx: ^sqlite3_context, data: cstring16, n: c.int,  d: proc "c" (rawptr) = SQLITE_STATIC) ---
+	result_text16_str :: proc(pCtx: ^sqlite3_context, data: cstring16, n: c.int, d: proc "c" (data: rawptr) = SQLITE_STATIC) ---
 	@(link_name="sqlite3_result16_text")
-	result_text16_buf :: proc(pCtx: ^sqlite3_context, data: [^]u16,    n: c.int,  d: proc "c" (rawptr) = SQLITE_STATIC) ---
-
-	result_text64     :: proc(pCtx: ^sqlite3_context, data: rawptr,    n: uint64, d: proc "c" (rawptr) = SQLITE_STATIC, encoding: Text_Encoding_U8) ---
+	result_text16_buf :: proc(pCtx: ^sqlite3_context, data: [^]u16, n: c.int,    d: proc "c" (data: rawptr) = SQLITE_STATIC) ---
+	result_text64     :: proc(pCtx: ^sqlite3_context, data: rawptr, n: uint64,   d: proc "c" (data: rawptr) = SQLITE_STATIC, encoding: Text_Encoding_U8) ---
 	
 	result_zeroblob   :: proc(pCtx: ^sqlite3_context, n: c.int) ---
 	result_zeroblob64 :: proc(pCtx: ^sqlite3_context, n: uint64) -> Result ---
@@ -551,7 +542,7 @@ foreign lib {
 		eTextRep: Text_Encoding,
 		pArg:     rawptr,
 		xCompare: proc "c" (rawptr, c.int, rawptr, c.int, cstring) -> c.int,
-		xDestroy: proc "c" (rawptr),
+		xDestroy: proc "c" (rawptr) = SQLITE_STATIC,
 	) -> Result ---
 	create_collation16 :: proc(
 		db:       ^sqlite3,
@@ -596,10 +587,10 @@ foreign lib {
 	rollback_hook :: proc(db: ^sqlite3, xCallback: proc "c" (rawptr), pArg: rawptr) -> rawptr ---
 
 	autovacuum_pages :: proc(
-		db: ^sqlite3,
-		cb: proc "c" (rawptr, cstring, c.uint, c.uint, c.uint) -> c.uint,
-		p:  rawptr,
-		d:  proc "c" (rawptr) = SQLITE_STATIC,
+		db:          ^sqlite3,
+		xCallback:   proc "c" (rawptr, cstring, c.uint, c.uint, c.uint) -> c.uint,
+		pArg:        rawptr,
+		xDestructor: proc "c" (pArg: rawptr) = SQLITE_STATIC,
 	) -> Result ---
 
 	update_hook :: proc(
@@ -614,7 +605,15 @@ foreign lib {
 	soft_heap_limit64 :: proc(N: int64) -> int64 ---
 	hard_heap_limit64 :: proc(N: int64) -> int64 ---
 
-	// @(deprecated="Use sqlite3.soft_heap_limit64() instead")
+	/*
+	CAPI3REF: Deprecated Soft Heap Limit Interface  
+	DEPRECATED  
+	  
+	This is a deprecated version of the [sqlite3.soft_heap_limit64()]  
+	interface.  This routine is provided for historical compatibility  
+	only.  All new applications should use the  
+	[sqlite3.soft_heap_limit64()] interface rather than this one.  
+	*/
 	soft_heap_limit :: proc(N: c.int) ---
 
 	table_column_metadata :: proc(
@@ -652,7 +651,7 @@ foreign lib {
 		zName:       cstring,  /* Name of the module */
 		p:           ^module,  /* Methods for the module */
 		pClientData: rawptr,   /* Client data for xCreate/xConnect */
-		xDestroy:    proc "c" (rawptr), /* Module destructor function */
+		xDestroy:    proc "c" (rawptr) = SQLITE_STATIC, /* Module destructor function */
 	) -> Result ---
 
 	drop_modules :: proc(
@@ -816,21 +815,21 @@ foreign lib {
 	) -> Result ---
 
 	carray_bind_v2 :: proc(
-		pStmt:  ^stmt,             /* Statement to be bound */
-		i:      c.int,             /* Parameter index */
-		aData:  rawptr,            /* Pointer to array data */
-		nData:  c.int,             /* Number of data elements */
-		mFlags: Carray_Flag,       /* CARRAY flags */
-		xDel:   proc "c" (rawptr), /* Destructor for aData */
-		pDel:   rawptr,            /* Optional argument to xDel() */
+		pStmt:  ^stmt,        /* Statement to be bound */
+		i:      c.int,        /* Parameter index */
+		aData:  rawptr,       /* Pointer to array data */
+		nData:  c.int,        /* Number of data elements */
+		mFlags: Carray_Flag,  /* CARRAY flags */
+		xDel:   proc "c" (rawptr) = SQLITE_STATIC, /* Destructor for aData */
+		pDel:   Maybe(rawptr) = nil,               /* Optional argument to xDel() */
 	) -> Result ---
 	carray_bind :: proc(
-		pStmt:  ^stmt,             /* Statement to be bound */
-		i:      c.int,             /* Parameter index */
-		aData:  rawptr,            /* Pointer to array data */
-		nData:  c.int,             /* Number of data elements */
-		mFlags: Carray_Flag,       /* CARRAY flags */
-		xDel:   proc "c" (rawptr), /* Destructor for aData */
+		pStmt:  ^stmt,        /* Statement to be bound */
+		i:      c.int,        /* Parameter index */
+		aData:  rawptr,       /* Pointer to array data */
+		nData:  c.int,        /* Number of data elements */
+		mFlags: Carray_Flag,  /* CARRAY flags */
+		xDel:   proc "c" (rawptr) = SQLITE_STATIC, /* Destructor for aData */
 	) -> Result ---
 }
 
@@ -863,11 +862,9 @@ when !OMIT_DEPRECATED {
 		transfer_bindings :: proc(pFromStmt: ^stmt, pToStmt: ^stmt) -> Result ---
 		global_recover    :: proc() -> Result ---
 		thread_cleanup    :: proc() ---
-		memory_alarm      :: proc(
-			xCallback: proc "c" (rawptr, int64, c.int), 
-			pArg: rawptr, 
-			iThreshold: int64,
-		) -> Result ---
+		memory_alarm      :: proc(xCallback: proc "c" (rawptr, int64, c.int), pArg: rawptr, iThreshold: int64) -> Result ---
+		trace :: proc(db: ^sqlite3, xTrace: proc "c" (rawptr, cstring), pUserData: rawptr) -> rawptr ---
+		profile :: proc(db: ^sqlite3, xProfile: proc "c" (rawptr, cstring, uint64), pUserData: rawptr) -> rawptr ---
 	}   
 }
 
@@ -909,13 +906,13 @@ when ENABLE_PREUPDATE_HOOK {
 		preupdate_hook :: proc(
 			db: ^sqlite3,
 			xPreUpdate: proc"c" (
-				pCtx:  rawptr,    /* Copy of third arg to preupdate_hook() */
+				pCtx:  rawptr,      /* Copy of third arg to preupdate_hook() */
 				db:    ^sqlite3,    /* Database handle */
 				op:    Action_Code, /* SQLITE_UPDATE, DELETE or INSERT */
-				zDb:   cstring,    /* Database name */
-				zName: cstring,  /* Table name */
-				iKey1: int64,    /* Rowid of row about to be deleted/updated */
-				iKey2: int64,    /* New rowid value (for a rowid UPDATE) */
+				zDb:   cstring,     /* Database name */
+				zName: cstring,     /* Table name */
+				iKey1: int64,       /* Rowid of row about to be deleted/updated */
+				iKey2: int64,       /* New rowid value (for a rowid UPDATE) */
 			),
 			pCtx: rawptr,
 		) -> rawptr ---
@@ -929,15 +926,15 @@ when ENABLE_PREUPDATE_HOOK {
 
 
 result :: proc {
-	result_blob,   result_blob64, 
-	result_double, result_int, 
-	result_int64, result_error_code, 
-	result_error_str, result_error16_str,
-	result_text64, 
-	result_text_str, result_error_buf,
+	result_blob,       result_blob64, 
+	result_double,     result_int, 
+	result_int64,      result_error_code, 
+	result_error_str,  result_error16_str,
+	result_text64,     result_null,
+	result_text_str,   result_error_buf,
 	result_text16_str, result_error16_buf,
-	result_text16le, result_text16be,
-	result_value,  result_pointer, result_null,
+	result_text16le,   result_text16be,
+	result_value,      result_pointer,
 }
 
 result_error   :: proc { result_error_str,   result_error_buf }
@@ -988,10 +985,10 @@ pcache_page :: struct {
 }
 
 index_constraint :: struct {
-	iColumn:     c.int, /* Column constrained.  -1 for ROWID */
+	iColumn:     c.int,            /* Column constrained.  -1 for ROWID */
 	op:          VT_Constraint_Op, /* Constraint operator */
-	usable:      b8,    /* True if this constraint is usable */
-	iTermOffset: c.int, /* Used internally - xBestIndex should ignore */
+	usable:      b8,               /* True if this constraint is usable */
+	iTermOffset: c.int,            /* Used internally - xBestIndex should ignore */
 }
 
 index_orderby :: struct {
@@ -1185,6 +1182,11 @@ pcache_methods2 :: struct {
 	xShrink:    proc "c" (^pcache),
 }
 
+/*
+This is the obsolete pcache_methods object that has now been replaced 
+by `sqlite3.pcache_methods2`.  This object is not used by SQLite.  It is 
+retained in the header file for backwards compatibility only.
+*/
 @(deprecated="Obsolete, use pcache_methods2")
 pcache_methods :: struct {
 	pArg: rawptr,
@@ -1538,40 +1540,40 @@ Auth_Res :: enum c.int {
 }
 
 Action_Code :: enum c.int {
-	CREATE_INDEX        =  1,   /* Index Name      Table Name      */
-	CREATE_TABLE        =  2,   /* Table Name      NULL            */
-	CREATE_TEMP_INDEX   =  3,   /* Index Name      Table Name      */
-	CREATE_TEMP_TABLE   =  4,   /* Table Name      NULL            */
-	CREATE_TEMP_TRIGGER =  5,   /* Trigger Name    Table Name      */
-	CREATE_TEMP_VIEW    =  6,   /* View Name       NULL            */
-	CREATE_TRIGGER      =  7,   /* Trigger Name    Table Name      */
-	CREATE_VIEW         =  8,   /* View Name       NULL            */
-	DELETE              =  9,   /* Table Name      NULL            */
-	DROP_INDEX          = 10,   /* Index Name      Table Name      */
-	DROP_TABLE          = 11,   /* Table Name      NULL            */
-	DROP_TEMP_INDEX     = 12,   /* Index Name      Table Name      */
-	DROP_TEMP_TABLE     = 13,   /* Table Name      NULL            */
-	DROP_TEMP_TRIGGER   = 14,   /* Trigger Name    Table Name      */
-	DROP_TEMP_VIEW      = 15,   /* View Name       NULL            */
-	DROP_TRIGGER        = 16,   /* Trigger Name    Table Name      */
-	DROP_VIEW           = 17,   /* View Name       NULL            */
-	INSERT              = 18,   /* Table Name      NULL            */
-	PRAGMA              = 19,   /* Pragma Name     1st arg or NULL */
-	READ                = 20,   /* Table Name      Column Name     */
-	SELECT              = 21,   /* NULL            NULL            */
-	TRANSACTION         = 22,   /* Operation       NULL            */
-	UPDATE              = 23,   /* Table Name      Column Name     */
-	ATTACH              = 24,   /* Filename        NULL            */
-	DETACH              = 25,   /* Database Name   NULL            */
-	ALTER_TABLE         = 26,   /* Database Name   Table Name      */
-	REINDEX             = 27,   /* Index Name      NULL            */
-	ANALYZE             = 28,   /* Table Name      NULL            */
-	CREATE_VTABLE       = 29,   /* Table Name      Module Name     */
-	DROP_VTABLE         = 30,   /* Table Name      Module Name     */
-	FUNCTION            = 31,   /* NULL            Function Name   */
-	SAVEPOINT           = 32,   /* Operation       Savepoint Name  */
-	COPY                =  0,   /* No longer used */
-	RECURSIVE           = 33,   /* NULL            NULL            */
+	CREATE_INDEX        =  1,  /* Index Name      Table Name      */
+	CREATE_TABLE        =  2,  /* Table Name      NULL            */
+	CREATE_TEMP_INDEX   =  3,  /* Index Name      Table Name      */
+	CREATE_TEMP_TABLE   =  4,  /* Table Name      NULL            */
+	CREATE_TEMP_TRIGGER =  5,  /* Trigger Name    Table Name      */
+	CREATE_TEMP_VIEW    =  6,  /* View Name       NULL            */
+	CREATE_TRIGGER      =  7,  /* Trigger Name    Table Name      */
+	CREATE_VIEW         =  8,  /* View Name       NULL            */
+	DELETE              =  9,  /* Table Name      NULL            */
+	DROP_INDEX          = 10,  /* Index Name      Table Name      */
+	DROP_TABLE          = 11,  /* Table Name      NULL            */
+	DROP_TEMP_INDEX     = 12,  /* Index Name      Table Name      */
+	DROP_TEMP_TABLE     = 13,  /* Table Name      NULL            */
+	DROP_TEMP_TRIGGER   = 14,  /* Trigger Name    Table Name      */
+	DROP_TEMP_VIEW      = 15,  /* View Name       NULL            */
+	DROP_TRIGGER        = 16,  /* Trigger Name    Table Name      */
+	DROP_VIEW           = 17,  /* View Name       NULL            */
+	INSERT              = 18,  /* Table Name      NULL            */
+	PRAGMA              = 19,  /* Pragma Name     1st arg or NULL */
+	READ                = 20,  /* Table Name      Column Name     */
+	SELECT              = 21,  /* NULL            NULL            */
+	TRANSACTION         = 22,  /* Operation       NULL            */
+	UPDATE              = 23,  /* Table Name      Column Name     */
+	ATTACH              = 24,  /* Filename        NULL            */
+	DETACH              = 25,  /* Database Name   NULL            */
+	ALTER_TABLE         = 26,  /* Database Name   Table Name      */
+	REINDEX             = 27,  /* Index Name      NULL            */
+	ANALYZE             = 28,  /* Table Name      NULL            */
+	CREATE_VTABLE       = 29,  /* Table Name      Module Name     */
+	DROP_VTABLE         = 30,  /* Table Name      Module Name     */
+	FUNCTION            = 31,  /* NULL            Function Name   */
+	SAVEPOINT           = 32,  /* Operation       Savepoint Name  */
+	COPY                =  0,  /* No longer used */
+	RECURSIVE           = 33,  /* NULL            NULL            */
 }
 
 Trace_Codes :: bit_set[Trace_Code; c.uint]
@@ -1937,7 +1939,7 @@ foreign lib {
 		zQueryFunc:  cstring,
 		xQueryFunc:  proc"c" (^rtree_query_info) -> Result,
 		pContext:    rawptr,
-		xDestructor: proc "c" (rawptr),
+		xDestructor: proc "c" (rawptr) = SQLITE_STATIC,
 	) -> Result ---
 }
 
@@ -2018,10 +2020,10 @@ when SQLITE_ENABLE_SESSION {
 		session_table_filter :: proc(
 			pSession: ^session, /* Session object */
 			xFilter:  proc "c" (
-				pCtx: rawptr,  /* Copy of third arg to _filter_table() */
-				zTab: cstring, /* Table name */
+				pCtx: rawptr,   /* Copy of third arg to _filter_table() */
+				zTab: cstring,  /* Table name */
 			) -> b32,
-			pCtx: rawptr,  /* First argument passed to xFilter */
+			pCtx: rawptr,       /* First argument passed to xFilter */
 		) ---
 
 		session_changeset :: proc(
@@ -2142,7 +2144,7 @@ when SQLITE_ENABLE_SESSION {
 				eConflict: Changeset_Conflict_Flag, /* DATA, MISSING, CONFLICT, CONSTRAINT */
 				p:         ^changeset_iter,         /* Handle describing change and conflict */
 			) -> Changeset_Conflict_Res,
-			pCtx: rawptr, /* First argument passed to xConflict */
+			pCtx: rawptr,         /* First argument passed to xConflict */
 		) -> Result ---
 
 		changeset_apply_v2 :: proc(
@@ -2150,24 +2152,24 @@ when SQLITE_ENABLE_SESSION {
 			nChangeset: c.int,    /* Size of changeset in bytes */
 			pChangeset: rawptr,   /* Changeset blob */
 			xFilter: proc "c" (
-				pCtx: rawptr,  /* Copy of sixth arg to _apply() */
-				zTab: cstring, /* Table name */
+				pCtx: rawptr,     /* Copy of sixth arg to _apply() */
+				zTab: cstring,    /* Table name */
 			) -> b32,
 			xConflict: proc "c" (
 				pCtx:      rawptr,                  /* Copy of sixth arg to _apply() */
 				eConflict: Changeset_Conflict_Flag, /* DATA, MISSING, CONFLICT, CONSTRAINT */
 				p:         ^changeset_iter,         /* Handle describing change and conflict */
 			) -> Changeset_Conflict_Res,
-			pCtx:     rawptr,                /* First argument passed to xConflict */
-			ppRebase: ^rawptr,               /* OUT: Rebase data */
-			pnRebase: ^c.int,                /* OUT: Rebase data */
-			flags:    Changeset_Apply_Flags, /* SESSION_CHANGESETAPPLY_* flags */
+			pCtx:     rawptr,                       /* First argument passed to xConflict */
+			ppRebase: ^rawptr,                      /* OUT: Rebase data */
+			pnRebase: ^c.int,                       /* OUT: Rebase data */
+			flags:    Changeset_Apply_Flags,        /* SESSION_CHANGESETAPPLY_* flags */
 		) -> Result ---
 
 		changeset_apply_v3 :: proc(
-			db:         ^sqlite3, /* Apply change to "main" db of this handle */
-			nChangeset: c.int,    /* Size of changeset in bytes */
-			pChangeset: rawptr,   /* Changeset blob */
+			db:         ^sqlite3,      /* Apply change to "main" db of this handle */
+			nChangeset: c.int,         /* Size of changeset in bytes */
+			pChangeset: rawptr,        /* Changeset blob */
 			xFilter: proc "c" (
 				pCtx: rawptr,          /* Copy of sixth arg to _apply() */
 				p:    ^changeset_iter, /* Handle describing change */
@@ -2177,10 +2179,10 @@ when SQLITE_ENABLE_SESSION {
 				eConflict: Changeset_Conflict_Flag, /* DATA, MISSING, CONFLICT, CONSTRAINT */
 				p:         ^changeset_iter,         /* Handle describing change and conflict */
 			) -> Changeset_Conflict_Res,
-			pCtx:     rawptr,                /* First argument passed to xConflict */
-			ppRebase: ^rawptr,               /* OUT: Rebase data */
-			pnRebase: ^c.int,                /* OUT: Rebase data */
-			flags:    Changeset_Apply_Flags, /* SESSION_CHANGESETAPPLY_* flags */
+			pCtx:     rawptr,                       /* First argument passed to xConflict */
+			ppRebase: ^rawptr,                      /* OUT: Rebase data */
+			pnRebase: ^c.int,                       /* OUT: Rebase data */
+			flags:    Changeset_Apply_Flags,        /* SESSION_CHANGESETAPPLY_* flags */
 		) -> Result ---
 
 		rebaser_create    :: proc(ppNew: ^^rebaser) -> Result ---
@@ -2189,54 +2191,54 @@ when SQLITE_ENABLE_SESSION {
 		rebaser_delete    :: proc(p: ^rebaser) ---
 
 		changeset_apply_strm :: proc(
-			db:     ^sqlite3, /* Apply change to "main" db of this handle */
+			db:     ^sqlite3,                       /* Apply change to "main" db of this handle */
 			xInput: proc "c" (pIn: rawptr, pData: rawptr, pnData: ^c.int) -> Result, /* Input function */
-			pIn:    rawptr,   /* First arg for xInput */
+			pIn:    rawptr,                         /* First arg for xInput */
 			xFilter: proc "c" (
-				pCtx: rawptr,  /* Copy of sixth arg to _apply() */
-				zTab: cstring, /* Table name */
+				pCtx: rawptr,                       /* Copy of sixth arg to _apply() */
+				zTab: cstring,                      /* Table name */
 			) -> b32,
 			xConflict: proc "c" (
 				pCtx:      rawptr,                  /* Copy of sixth arg to _apply() */
 				eConflict: Changeset_Conflict_Flag, /* DATA, MISSING, CONFLICT, CONSTRAINT */
-				p: ^changeset_iter, /* Handle describing change and conflict */
+				p: ^changeset_iter,                 /* Handle describing change and conflict */
 			) -> Changeset_Conflict_Res,
-			pCtx: rawptr, /* First argument passed to xConflict */
+			pCtx: rawptr,                           /* First argument passed to xConflict */
 		) -> Result ---
 
 		changeset_apply_v2_strm :: proc(
-			db: ^sqlite3,          /* Apply change to "main" db of this handle */
+			db: ^sqlite3,                           /* Apply change to "main" db of this handle */
 			xInput: proc "c" (pIn: rawptr, pData: rawptr, pnData: ^c.int) -> Result, /* Input function */
-			pIn: rawptr,           /* First arg for xInput */
+			pIn: rawptr,                            /* First arg for xInput */
 			xFilter: proc "c" (
-				pCtx: rawptr,      /* Copy of sixth arg to _apply() */
-				zTab: cstring,      /* Table name */
+				pCtx: rawptr,                       /* Copy of sixth arg to _apply() */
+				zTab: cstring,                      /* Table name */
 			) -> b32,
 			xConflict: proc "c" (
-				pCtx: rawptr,      /* Copy of sixth arg to _apply() */
-				eConflict: Changeset_Conflict_Flag,                /* DATA, MISSING, CONFLICT, CONSTRAINT */
-				p: ^changeset_iter, /* Handle describing change and conflict */
+				pCtx: rawptr,                       /* Copy of sixth arg to _apply() */
+				eConflict: Changeset_Conflict_Flag, /* DATA, MISSING, CONFLICT, CONSTRAINT */
+				p: ^changeset_iter,                 /* Handle describing change and conflict */
 			) -> Changeset_Conflict_Res,
-			pCtx: rawptr,          /* First argument passed to xConflict */
+			pCtx: rawptr,                           /* First argument passed to xConflict */
 			ppRebase: ^rawptr, 
 			pnRebase: ^c.int,
 			flags: Changeset_Apply_Flags,
 		) -> Result ---
 
 		changeset_apply_v3_strm :: proc(
-			db: ^sqlite3,          /* Apply change to "main" db of this handle */
+			db: ^sqlite3,                           /* Apply change to "main" db of this handle */
 			xInput: proc "c" (pIn: rawptr, pData: rawptr, pnData: ^c.int) -> Result, /* Input function */
-			pIn: rawptr,           /* First arg for xInput */
+			pIn: rawptr,                            /* First arg for xInput */
 			xFilter: proc "c" (
-				pCtx: rawptr,      /* Copy of sixth arg to _apply() */
+				pCtx: rawptr,                       /* Copy of sixth arg to _apply() */
 				p: ^changeset_iter,
 			) -> b32,
 			xConflict: proc "c" (
-				pCtx: rawptr,      /* Copy of sixth arg to _apply() */
-				eConflict: Changeset_Conflict_Flag,                /* DATA, MISSING, CONFLICT, CONSTRAINT */
-				p: ^changeset_iter, /* Handle describing change and conflict */
+				pCtx: rawptr,                       /* Copy of sixth arg to _apply() */
+				eConflict: Changeset_Conflict_Flag, /* DATA, MISSING, CONFLICT, CONSTRAINT */
+				p: ^changeset_iter,                 /* Handle describing change and conflict */
 			) -> Changeset_Conflict_Res,
-			pCtx: rawptr,          /* First argument passed to xConflict */
+			pCtx: rawptr,                           /* First argument passed to xConflict */
 			ppRebase: ^rawptr, 
 			pnRebase: ^c.int,
 			flags: Changeset_Apply_Flags,
@@ -2442,7 +2444,7 @@ fts5_tokenizer :: struct {
 	xTokenize: proc "c" (
 		p:     ^Fts5Tokenizer,
 		pCtx:  rawptr,
-		flags: FT5_Tokenize_Flags, /* Mask of FTS5_TOKENIZE_* flags */
+		flags: FT5_Tokenize_Flags,   /* Mask of FTS5_TOKENIZE_* flags */
 		pText: cstring, 
 		nText: c.int,
 		xToken: proc "c" (
@@ -2868,7 +2870,7 @@ api_routines :: struct {
 	str_truncate:           proc "c" (p: ^str, N: c.int),
 	str_free:               proc "c" (p: ^str),
 	carray_bind:            proc "c" (pStmt: ^stmt, i: c.int, aData: rawptr, nData: c.int, mFlags: Carray_Flag, xDel: proc "c" (rawptr)) -> Result,
-	carray_bind_v2:         proc "c" (pStmt:  ^stmt, i: c.int, aData: rawptr, nData: c.int, mFlags: Carray_Flag, xDel: proc "c" (rawptr), pDel: rawptr) -> Result,
+	carray_bind_v2:         proc "c" (pStmt:  ^stmt, i: c.int, aData: rawptr, nData: c.int, mFlags: Carray_Flag, xDel: proc "c" (rawptr), pDel: Maybe(rawptr)) -> Result,
 }
 
 loadext_entry :: proc "c" (
@@ -2880,7 +2882,6 @@ loadext_entry :: proc "c" (
 api_routines_init :: proc(a: ^api_routines) {
 	a^ = {
 		aggregate_context      = aggregate_context,
-		aggregate_count        = aggregate_count,
 		bind_blob              = bind_blob,
 		bind_double            = bind_double,
 		bind_int               = bind_int,
@@ -2935,14 +2936,12 @@ api_routines_init :: proc(a: ^api_routines) {
 		errmsg                 = errmsg,
 		errmsg16               = errmsg16,
 		exec                   = exec,
-		expired                = expired,
 		finalize               = finalize,
 		free                   = free,
 		free_table             = free_table,
 		get_autocommit         = get_autocommit,
 		get_auxdata            = get_auxdata,
 		get_table              = get_table,
-		global_recover         = global_recover,
 		interruptx             = interrupt,
 		last_insert_rowid      = last_insert_rowid,
 		libversion             = libversion,
@@ -2953,7 +2952,6 @@ api_routines_init :: proc(a: ^api_routines) {
 		open16                 = open16,
 		prepare                = prepare,
 		prepare16              = prepare16,
-		profile                = profile,
 		progress_handler       = progress_handler,
 		realloc                = realloc,
 		reset                  = reset,
@@ -2975,10 +2973,7 @@ api_routines_init :: proc(a: ^api_routines) {
 		xsnprintf              = snprintf,
 		step                   = step,
 		table_column_metadata  = table_column_metadata,
-		thread_cleanup         = thread_cleanup,
 		total_changes          = total_changes,
-		trace                  = trace,
-		transfer_bindings      = transfer_bindings,
 		update_hook            = update_hook,
 		user_data              = user_data,
 		value_blob             = value_blob,
@@ -3156,7 +3151,16 @@ api_routines_init :: proc(a: ^api_routines) {
 		carray_bind_v2         = carray_bind_v2,
 	}
 	when ENABLE_NORMALIZE {
-		a. normalized_sql      = normalized_sql
+		a.normalized_sql       = normalized_sql
+	}
+	when !OMIT_DEPRECATED {
+		a.aggregate_count      = aggregate_count
+		a.expired              = expired
+		a.global_recover       = global_recover
+		a.profile              = profile
+		a.thread_cleanup       = thread_cleanup
+		a.trace                = trace
+		a.transfer_bindings    = transfer_bindings
 	}
 }
 
