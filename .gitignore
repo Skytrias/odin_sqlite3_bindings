@@ -1,6 +1,7 @@
 *.a
 *.o
 *.so
+*.dylib
 *.def
 *.exp
 *.lib
