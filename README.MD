@@ -28,5 +28,5 @@ Proc groups have been provided for `result_*` & `bind_*`.
 
 Result Codes & Extended Result Codes have been combind into a single `Result` enum.  
 
-# WARNINGS
-Foreign imports are, for now atleast untested, on Non-Windows platforms.   
+## Notes:
+Foreign imports how only been tested on Windows, for now at least.   
