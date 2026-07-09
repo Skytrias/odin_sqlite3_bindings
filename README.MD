@@ -3,7 +3,8 @@ SQLite3 bindings for Odin. Made against the SQLITE3 3.53.2 amalgamation.
 
 ## Binaries
 No binaries are provided. Instead it'll use the ones on your system. <br>
-You can alternatively, you the build scripts in `./lib` to build them localy
+You can alternatively, you the build scripts in `./lib` to build them localy. 
+Then build your project with `-define:SQLITE_SYSTEM_LIB=false`, or modify the default value to `false`.
 
 ## Definables
 #### For Bindings:
@@ -28,5 +29,8 @@ Proc groups have been provided for `result_*` & `bind_*`.
 
 Result Codes & Extended Result Codes have been combind into a single `Result` enum.  
 
-## Notes:
+## SQLite3 source code
+Both the amalgamation header & source code are provided in `./src_amalg`.
+
+## Notes
 Foreign imports how only been tested on Windows, for now at least.   
