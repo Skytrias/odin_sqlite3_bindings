@@ -12,5 +12,6 @@
 *.rdi
 *.rad
 *.radproject
+*.obj
 
 main.odin

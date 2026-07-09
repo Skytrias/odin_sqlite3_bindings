@@ -1,7 +1,7 @@
 @echo off
 call vcvars64.bat
 
-cl /DSQLITE_API=extern /MT /TC /c /O2 /nologo  "./main.c"
+cl /DSQLITE_API=extern /MT /TC /c /O2 /nologo "./main.c"
 lib main.obj /out:"./sqlite3_lib.lib"
 del main.obj
 
