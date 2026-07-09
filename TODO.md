@@ -2,3 +2,4 @@
 - [X] Convert `c.int` to `Result` where needed
 - [X] Align Things `:)`
 - [ ] Maybe add some helper procs, IDK yet.
+- [ ] Test on Linux.
