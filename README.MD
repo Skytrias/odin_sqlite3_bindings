@@ -3,8 +3,12 @@ SQLite3 bindings for Odin. Made against the SQLITE3 3.53.2 amalgamation.
 
 ## Binaries
 No binaries are provided. Instead it'll use the ones on your system. <br>
-You can alternatively, you the build scripts in `./lib` to build them localy. 
+You can alternatively use the build scripts in `./lib` to build them locally.
 Then build your project with `-define:SQLITE_SYSTEM_LIB=false`, or modify the default value to `false`.
+
+On Windows, `lib/build.cmd release` builds `sqlite3_lib.lib` for static release
+linking, `lib/build.cmd debug` builds `sqlite3_debug.lib`, and
+`lib/build.cmd shared` builds the opt-in DLL/import-library pair.
 
 ## Definables
 #### For Bindings:

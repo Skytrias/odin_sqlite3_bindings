@@ -21,7 +21,7 @@ when ODIN_OS == .Windows {
 		"./lib/sqlite3_debug.lib" when SQLITE_DEBUG   else 
 		"./lib/sqlite3_dll.lib"   when SQLITE_SHARED  else 
 		"system:winsqlite3.lib"   when USE_SYSTEM_LIB else
-		"./lib/sqlite3_dll.lib"
+		"./lib/sqlite3_lib.lib"
 	)}
 
 } else {
