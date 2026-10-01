@@ -1862,22 +1862,22 @@ when ENABLE_SEE {
 	foreign lib { 
 		key :: proc(
 			db: ^sqlite3,              /* Database to be rekeyed */
-			pKey: rawptr, nKey: c.int  /* The key, and the length of the key in bytes */
+			pKey: rawptr, nKey: c.int, /* The key, and the length of the key in bytes */
 		) -> Result ---
 		key_v2 :: proc(
 			db: ^sqlite3,              /* Database to be rekeyed */
 			zDbName: cstring,          /* Name of the database */
-			pKey: rawptr, nKey: c.int  /* The key, and the length of the key in bytes */
+			pKey: rawptr, nKey: c.int, /* The key, and the length of the key in bytes */
 		) -> Result ---
 
 		rekey :: proc(
 			db: ^sqlite3,              /* Database to be rekeyed */
-			pKey: rawptr, nKey: c.int  /* The new key, and the length of the key in bytes */
+			pKey: rawptr, nKey: c.int, /* The new key, and the length of the key in bytes */
 		) -> Result ---
 		rekey_v2 :: proc(
 			db: ^sqlite3,              /* Database to be rekeyed */
 			zDbName: cstring,          /* Name of the database */
-			pKey: rawptr, nKey: c.int  /* The new key, and the length of the key in bytes */
+			pKey: rawptr, nKey: c.int, /* The new key, and the length of the key in bytes */
 		) -> Result ---
 	}
 }
